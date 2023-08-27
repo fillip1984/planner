@@ -32,13 +32,13 @@ export default function Home() {
 
   const calcStart = (task: Task): number => {
     const start = parseInt(format(task.start, "H")) * 5;
-    console.log("start", start);
+    // console.log("start", start);
     return start;
   };
 
   const calcHeight = (task: Task): number => {
     const height = (getHours(task.end) - getHours(task.start)) * 5;
-    console.log("height", height);
+    // console.log("height", height);
     return height;
   };
 
@@ -82,11 +82,11 @@ export default function Home() {
 
   const handleResizeEnd = () => {
     if (clientY && newClientY) {
-      console.log(newClientY - clientY);
+      // console.log(newClientY - clientY);
       const translateY = newClientY - clientY;
       const hoursNumber = translateY / 86;
-      console.log("hoursNumber", hoursNumber);
-      console.log("hoursNumber rounded", Math.round(hoursNumber));
+      // console.log("hoursNumber", hoursNumber);
+      // console.log("hoursNumber rounded", Math.round(hoursNumber));
       const roundedHoursNumber = getHours(task.end) + Math.round(hoursNumber);
       setTask({
         ...task,
