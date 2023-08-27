@@ -48,6 +48,7 @@ export default function Home() {
 
   const handleDrag = (e: DragEvent<HTMLButtonElement>) => {
     //see: https://engineering.datorama.com/mastering-drag-drop-with-reactjs-part-01-39bed3d40a03
+    console.log("Y", e.clientY);
     setNewClientY(e.clientY);
   };
 
