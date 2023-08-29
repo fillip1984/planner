@@ -1,19 +1,16 @@
-import { format, getHours } from "date-fns";
-import {
-  useState,
-  type Dispatch,
-  type PointerEvent,
-  type SetStateAction,
-} from "react";
+import { format, getHours, setHours } from "date-fns";
+import { useState, type PointerEvent } from "react";
 import { BsArrowsExpand } from "react-icons/bs";
-import { type Task } from "~/types";
+import { type Task, type Timeslot } from "~/types";
 
 export default function TaskCard({
   task,
-  setTasks,
+  calculateHourBasedOnCoordinate,
+  handleUpdateTask,
 }: {
   task: Task;
-  setTasks: Dispatch<SetStateAction<Task[]>>;
+  calculateHourBasedOnCoordinate: (clientY: number) => Timeslot | undefined;
+  handleUpdateTask: (start: Date, end: Date, id: string) => void;
 }) {
   const [state, setState] = useState({
     //drag props
@@ -24,11 +21,11 @@ export default function TaskCard({
 
     //resize props
     isResizing: false,
-    height: 75,
+    height: 115 * task.duration,
   });
 
   const handleDragStart = (e: PointerEvent<HTMLDivElement>) => {
-    console.log("drag starting");
+    // console.log("drag starting");
     setState((prev) => ({
       ...prev,
       isDragging: true,
@@ -40,16 +37,34 @@ export default function TaskCard({
     if (!state.isDragging) {
       return;
     }
-    console.log("dragging");
+    // console.log("dragging");
+    const newY = e.clientY - state.originalY + state.lastTranslateY;
+
+    // if (!e.currentTarget.parentElement) {
+    //   return;
+    // }
+    // const topOfTaskCard =
+    //   e.currentTarget.parentElement.getBoundingClientRect().top + newY;
+    const timeslot = calculateHourBasedOnCoordinate(newY);
+    // console.log("timeslot", timeslot);
+    if (timeslot && getHours(task.start) !== timeslot.hour) {
+      handleUpdateTask(
+        setHours(task.start, timeslot.hour),
+        setHours(task.end, timeslot.hour + task.duration),
+        task.description
+      );
+    }
 
     setState((prev) => ({
       ...prev,
-      translateY: e.clientY - prev.originalY + prev.lastTranslateY,
+      translateY: newY,
     }));
+
+    // console.log("timeslot", timeslot);
   };
 
   const handleDragEnd = () => {
-    console.log("drag ending");
+    // console.log("drag ending");
     setState((prev) => ({
       ...prev,
       isDragging: false,
@@ -58,7 +73,7 @@ export default function TaskCard({
   };
 
   const handleResizeStart = (e: PointerEvent<HTMLButtonElement>) => {
-    console.log("resize starting");
+    // console.log("resize starting");
     e.stopPropagation();
     e.currentTarget.setPointerCapture(e.pointerId);
     setState((prev) => ({
@@ -71,7 +86,7 @@ export default function TaskCard({
     if (!state.isResizing) {
       return;
     }
-    console.log("resizing");
+    // console.log("resizing");
 
     // you have to find out how far off the top of the visible screen the item is to resize it
     //properly. The clientY gives coordinates to where the cursor is on the visible screen so you
@@ -79,7 +94,7 @@ export default function TaskCard({
     // element will jump the number of pixels that exist between the top of the element to the top
     // of the screen
     const top = e.currentTarget.parentElement?.getBoundingClientRect().top ?? 0;
-    console.log(top);
+    // console.log(top);
     setState((prev) => ({
       ...prev,
       // arbitruary + 15 just makes resizing look more natural. The cursor gets ahead of the resize and padding by + 15 seems to hold the cursor closer to the handle (might be the handle's pixel size maybe?)
@@ -89,7 +104,7 @@ export default function TaskCard({
   };
 
   const handleResizeEnd = (e: PointerEvent<HTMLButtonElement>) => {
-    console.log("resize ending");
+    // console.log("resize ending");
     e.currentTarget.releasePointerCapture(e.pointerId);
     setState((prev) => ({
       ...prev,
