@@ -35,7 +35,6 @@ export default function DraggableRectangle() {
   };
 
   const handleDrag = (e: MouseEvent) => {
-    console.log(rectRef.current);
     setState((prev) => ({
       ...prev,
       translateY: e.clientY - prev.originalY + prev.lastTranslateY,
@@ -64,7 +63,6 @@ export default function DraggableRectangle() {
   };
 
   const handleResize = (e: MouseEvent) => {
-    console.log(`y: ${e.clientY}`);
     // the arbitrary +15 is because when you start to drag the cursor is too fast. Adding pixels bumps it out
     setState((prev) => ({
       ...prev,

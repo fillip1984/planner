@@ -32,12 +32,10 @@ export default function Home() {
   }, []);
 
   const handleTimeslots = () => {
-    // console.log("building out timeslots");
     const calculatedTimeslots: Timeslot[] = [];
     const timeslotDivs = document.querySelectorAll("[data-timeslot") as unknown;
 
     (timeslotDivs as HTMLDivElement[]).forEach((timeslotDiv) => {
-      // console.log(timeslotDiv.getBoundingClientRect());
       if (!timeslotDiv.dataset.timeslot) {
         throw new Error("Missing timeslot data attribute");
       }
@@ -61,19 +59,16 @@ export default function Home() {
   };
 
   const calculatePosition = (start: Date, end: Date) => {
-    console.log("timeslots", timeslots);
     const firstTimeslot = timeslots.find(
       (timeslot) => timeslot.hour === getHours(start)
     );
     const secondTimeslot = timeslots.find(
       (timeslot) => timeslot.hour === getHours(end)
     );
-    console.log(firstTimeslot, secondTimeslot);
     return [firstTimeslot, secondTimeslot];
   };
 
   const handleUpdateTask = (start: Date, end: Date, taskId: string) => {
-    // console.log("setting time to: " + start.toISOString());
     setTasks((prev) => {
       return prev.map((prevTask) =>
         prevTask.description === taskId
