@@ -127,7 +127,7 @@ export default function TaskCard({
 
   return (
     <div
-      className="absolute left-2 right-2 touch-none rounded-md border border-l-4 border-white bg-black p-2"
+      className="absolute left-2 right-2 min-h-[80px] touch-none rounded-md border border-l-4 border-white bg-black p-2"
       style={{
         transform: `translateY(${state.translateY}px)`,
         cursor: `${state.isDragging ? "grabbing" : "grab"}`,
