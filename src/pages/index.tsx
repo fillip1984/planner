@@ -25,6 +25,12 @@ export default function Home() {
       duration: 2,
       description: "Sleeping",
     },
+    {
+      start: parse("2023-08-26 01:00", "yyyy-MM-dd HH:mm", new Date()),
+      end: parse("2023-08-26 02:00", "yyyy-MM-dd HH:mm", new Date()),
+      duration: 2,
+      description: "Eating",
+    },
   ]);
 
   useEffect(() => {

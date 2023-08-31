@@ -26,6 +26,8 @@ export default function TaskCard({
     //resize props
     isResizing: false,
     height: 0,
+
+    isDouble: false,
   });
 
   useEffect(() => {
@@ -41,14 +43,20 @@ export default function TaskCard({
         ...prev,
         isDragging: false,
         isResizing: false,
-        translateY: firstTimeslot.top,
+        // give some margin is reason for +5
+        translateY: firstTimeslot.top + 5,
         lastTranslateY: firstTimeslot.top,
-        height: secondTimeslot.top - firstTimeslot.top,
+        // give some margin is reason for -10
+        height: secondTimeslot.top - firstTimeslot.top - 10,
       }));
     }
   };
 
   const handleDragStart = (e: PointerEvent<HTMLDivElement>) => {
+    if (e.detail == 2) {
+      handleDoubleClick();
+      return;
+    }
     setState((prev) => ({
       ...prev,
       isDragging: true,
@@ -105,7 +113,7 @@ export default function TaskCard({
     const bottom =
       e.currentTarget.parentElement?.getBoundingClientRect().bottom ?? 0;
     const timeslot = calculateHourBasedOnCoordinate(bottom);
-    console.log("timeslot", timeslot);
+
     setState((prev) => ({
       ...prev,
       // arbitruary + 15 just makes resizing look more natural. The cursor gets ahead of the resize and padding by + 15 seems to hold the cursor closer to the handle (might be the handle's pixel size maybe?)
@@ -125,13 +133,18 @@ export default function TaskCard({
     positionTask();
   };
 
+  const handleDoubleClick = () => {
+    setState((prev) => ({ ...prev, isDouble: !prev.isDouble }));
+  };
+
   return (
     <div
-      className="absolute left-2 right-2 min-h-[80px] touch-none rounded-md border border-l-4 border-white bg-black p-2"
+      className="absolute left-2 right-2 min-h-[60px] touch-none select-none rounded-md border border-l-4 border-white bg-black p-2"
       style={{
         transform: `translateY(${state.translateY}px)`,
         cursor: `${state.isDragging ? "grabbing" : "grab"}`,
         height: `${state.height}px`,
+        zIndex: `${state.isDragging || state.isResizing ? "999" : "0"}`,
         // top: `${top}rem`,
         // height: `${calcHeight(task)}rem`,
         // top: `${calcStart(task)}rem`,
@@ -150,14 +163,15 @@ export default function TaskCard({
           return true;
         };
       }}>
-      <h4>Sleep</h4>
+      <h4>{task.description}</h4>
       <span>
         {format(task.start, "h aa")} - {format(task.end, "h aa")} (Duration:{" "}
         {getHours(task.end) - getHours(task.start)})
+        {state.isDouble && "Modal time!"}
       </span>
       <button
         type="button"
-        className="absolute bottom-1 left-1/2 touch-none"
+        className="absolute bottom-1 left-1/2 touch-none text-2xl text-white/50 sm:text-base"
         style={{
           cursor: `${state.isResizing ? "grabbing" : "s-resize"}`,
         }}
