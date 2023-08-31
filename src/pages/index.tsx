@@ -3,6 +3,7 @@ import {
   eachHourOfInterval,
   endOfDay,
   format,
+  getHours,
   parse,
   startOfDay,
 } from "date-fns";
@@ -19,8 +20,8 @@ export default function Home() {
   //differenceInHours(start, end) <-- generates duration
   const [tasks, setTasks] = useState<Task[]>([
     {
-      start: parse("2023-08-26 00:00", "yyyy-MM-dd HH:mm", new Date()),
-      end: parse("2023-08-26 02:00", "yyyy-MM-dd HH:mm", new Date()),
+      start: parse("2023-08-26 02:00", "yyyy-MM-dd HH:mm", new Date()),
+      end: parse("2023-08-26 04:00", "yyyy-MM-dd HH:mm", new Date()),
       duration: 2,
       description: "Sleeping",
     },
@@ -52,16 +53,23 @@ export default function Home() {
   };
 
   const calculateHourBasedOnCoordinate = (clientY: number) => {
-    // console.log("timeslots", timeslots, "clientY", clientY);
     const timeslot = timeslots?.find(
       (timeslot) => timeslot.top <= clientY && timeslot.bottom >= clientY
     );
 
-    // if (!timeslot) {
-    //   throw new Error("Unable to determine timeslot based on y coordinate");
-    // }
-
     return timeslot;
+  };
+
+  const calculatePosition = (start: Date, end: Date) => {
+    console.log("timeslots", timeslots);
+    const firstTimeslot = timeslots.find(
+      (timeslot) => timeslot.hour === getHours(start)
+    );
+    const secondTimeslot = timeslots.find(
+      (timeslot) => timeslot.hour === getHours(end)
+    );
+    console.log(firstTimeslot, secondTimeslot);
+    return [firstTimeslot, secondTimeslot];
   };
 
   const handleUpdateTask = (start: Date, end: Date, taskId: string) => {
@@ -120,6 +128,7 @@ export default function Home() {
                 key={task.description}
                 task={task}
                 calculateHourBasedOnCoordinate={calculateHourBasedOnCoordinate}
+                calculatePosition={calculatePosition}
                 handleUpdateTask={handleUpdateTask}
               />
             ))}

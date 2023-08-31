@@ -1,15 +1,17 @@
 import { format, getHours, setHours } from "date-fns";
-import { useState, type PointerEvent } from "react";
+import { useEffect, useState, type PointerEvent } from "react";
 import { BsArrowsExpand } from "react-icons/bs";
 import { type Task, type Timeslot } from "~/types";
 
 export default function TaskCard({
   task,
   calculateHourBasedOnCoordinate,
+  calculatePosition,
   handleUpdateTask,
 }: {
   task: Task;
   calculateHourBasedOnCoordinate: (clientY: number) => Timeslot | undefined;
+  calculatePosition: (start: Date, end: Date) => (Timeslot | undefined)[];
   handleUpdateTask: (start: Date, end: Date, id: string) => void;
 }) {
   const [state, setState] = useState({
@@ -21,11 +23,30 @@ export default function TaskCard({
 
     //resize props
     isResizing: false,
-    height: 115 * task.duration,
+    height: 0,
   });
 
+  useEffect(() => {
+    positionTask();
+  }, []);
+
+  const positionTask = () => {
+    const timeslots = calculatePosition(task.start, task.end);
+    if (timeslots?.[0] && timeslots[1]) {
+      const firstTimeslot = timeslots[0];
+      const secondTimeslot = timeslots[1];
+      setState((prev) => ({
+        ...prev,
+        isDragging: false,
+        isResizing: false,
+        translateY: firstTimeslot.top,
+        lastTranslateY: firstTimeslot.top,
+        height: secondTimeslot.bottom - firstTimeslot.top,
+      }));
+    }
+  };
+
   const handleDragStart = (e: PointerEvent<HTMLDivElement>) => {
-    // console.log("drag starting");
     setState((prev) => ({
       ...prev,
       isDragging: true,
@@ -37,16 +58,10 @@ export default function TaskCard({
     if (!state.isDragging) {
       return;
     }
-    // console.log("dragging");
+
     const newY = e.clientY - state.originalY + state.lastTranslateY;
 
-    // if (!e.currentTarget.parentElement) {
-    //   return;
-    // }
-    // const topOfTaskCard =
-    //   e.currentTarget.parentElement.getBoundingClientRect().top + newY;
     const timeslot = calculateHourBasedOnCoordinate(newY);
-    // console.log("timeslot", timeslot);
     if (timeslot && getHours(task.start) !== timeslot.hour) {
       handleUpdateTask(
         setHours(task.start, timeslot.hour),
@@ -59,21 +74,13 @@ export default function TaskCard({
       ...prev,
       translateY: newY,
     }));
-
-    // console.log("timeslot", timeslot);
   };
 
   const handleDragEnd = () => {
-    // console.log("drag ending");
-    setState((prev) => ({
-      ...prev,
-      isDragging: false,
-      lastTranslateY: prev.translateY,
-    }));
+    positionTask();
   };
 
   const handleResizeStart = (e: PointerEvent<HTMLButtonElement>) => {
-    // console.log("resize starting");
     e.stopPropagation();
     e.currentTarget.setPointerCapture(e.pointerId);
     setState((prev) => ({
@@ -86,7 +93,6 @@ export default function TaskCard({
     if (!state.isResizing) {
       return;
     }
-    // console.log("resizing");
 
     // you have to find out how far off the top of the visible screen the item is to resize it
     //properly. The clientY gives coordinates to where the cursor is on the visible screen so you
@@ -94,23 +100,16 @@ export default function TaskCard({
     // element will jump the number of pixels that exist between the top of the element to the top
     // of the screen
     const top = e.currentTarget.parentElement?.getBoundingClientRect().top ?? 0;
-    // console.log(top);
     setState((prev) => ({
       ...prev,
       // arbitruary + 15 just makes resizing look more natural. The cursor gets ahead of the resize and padding by + 15 seems to hold the cursor closer to the handle (might be the handle's pixel size maybe?)
       height: e.clientY + 15 - top,
-      //   translateY: e.clientY - prev.originalY + prev.lastTranslateY,
     }));
   };
 
   const handleResizeEnd = (e: PointerEvent<HTMLButtonElement>) => {
-    // console.log("resize ending");
     e.currentTarget.releasePointerCapture(e.pointerId);
-    setState((prev) => ({
-      ...prev,
-      isResizing: false,
-      //   lastTranslateY: prev.translateY,
-    }));
+    positionTask();
   };
 
   return (
