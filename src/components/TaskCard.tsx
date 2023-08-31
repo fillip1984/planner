@@ -4,11 +4,13 @@ import { BsArrowsExpand } from "react-icons/bs";
 import { type Task, type Timeslot } from "~/types";
 
 export default function TaskCard({
+  timeslots,
   task,
   calculateHourBasedOnCoordinate,
   calculatePosition,
   handleUpdateTask,
 }: {
+  timeslots: Timeslot[];
   task: Task;
   calculateHourBasedOnCoordinate: (clientY: number) => Timeslot | undefined;
   calculatePosition: (start: Date, end: Date) => (Timeslot | undefined)[];
@@ -28,7 +30,7 @@ export default function TaskCard({
 
   useEffect(() => {
     positionTask();
-  }, []);
+  }, [timeslots]);
 
   const positionTask = () => {
     const timeslots = calculatePosition(task.start, task.end);
@@ -41,7 +43,7 @@ export default function TaskCard({
         isResizing: false,
         translateY: firstTimeslot.top,
         lastTranslateY: firstTimeslot.top,
-        height: secondTimeslot.bottom - firstTimeslot.top,
+        height: secondTimeslot.top - firstTimeslot.top,
       }));
     }
   };
@@ -100,11 +102,22 @@ export default function TaskCard({
     // element will jump the number of pixels that exist between the top of the element to the top
     // of the screen
     const top = e.currentTarget.parentElement?.getBoundingClientRect().top ?? 0;
+    const bottom =
+      e.currentTarget.parentElement?.getBoundingClientRect().bottom ?? 0;
+    const timeslot = calculateHourBasedOnCoordinate(bottom);
+    console.log("timeslot", timeslot);
     setState((prev) => ({
       ...prev,
       // arbitruary + 15 just makes resizing look more natural. The cursor gets ahead of the resize and padding by + 15 seems to hold the cursor closer to the handle (might be the handle's pixel size maybe?)
       height: e.clientY + 15 - top,
     }));
+    if (timeslot && getHours(task.end) !== timeslot.hour + 1) {
+      handleUpdateTask(
+        task.start,
+        setHours(task.end, timeslot.hour + 1),
+        task.description
+      );
+    }
   };
 
   const handleResizeEnd = (e: PointerEvent<HTMLButtonElement>) => {

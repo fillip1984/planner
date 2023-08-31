@@ -121,6 +121,7 @@ export default function Home() {
             {tasks.map((task) => (
               <TaskCard
                 key={task.description}
+                timeslots={timeslots}
                 task={task}
                 calculateHourBasedOnCoordinate={calculateHourBasedOnCoordinate}
                 calculatePosition={calculatePosition}
