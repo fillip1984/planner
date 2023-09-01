@@ -1,20 +1,20 @@
 import { format, getHours, setHours } from "date-fns";
 import { useEffect, useState, type PointerEvent } from "react";
 import { BsArrowsExpand } from "react-icons/bs";
-import { type Task, type Timeslot } from "~/types";
+import { type Event, type Timeslot } from "~/types";
 
-export default function TaskCard({
+export default function EventCard({
   timeslots,
-  task,
+  event,
   calculateHourBasedOnCoordinate,
   calculatePosition,
-  handleUpdateTask,
+  handleUpdateEvent,
 }: {
   timeslots: Timeslot[];
-  task: Task;
+  event: Event;
   calculateHourBasedOnCoordinate: (clientY: number) => Timeslot | undefined;
   calculatePosition: (start: Date, end: Date) => (Timeslot | undefined)[];
-  handleUpdateTask: (start: Date, end: Date, id: string) => void;
+  handleUpdateEvent: (start: Date, end: Date, id: string) => void;
 }) {
   const [state, setState] = useState({
     //drag props
@@ -31,11 +31,11 @@ export default function TaskCard({
   });
 
   useEffect(() => {
-    positionTask();
+    positionEvent();
   }, [timeslots]);
 
-  const positionTask = () => {
-    const timeslots = calculatePosition(task.start, task.end);
+  const positionEvent = () => {
+    const timeslots = calculatePosition(event.start, event.end);
     if (timeslots?.[0] && timeslots[1]) {
       const firstTimeslot = timeslots[0];
       const secondTimeslot = timeslots[1];
@@ -72,11 +72,11 @@ export default function TaskCard({
     const newY = e.clientY - state.originalY + state.lastTranslateY;
 
     const timeslot = calculateHourBasedOnCoordinate(newY);
-    if (timeslot && getHours(task.start) !== timeslot.hour) {
-      handleUpdateTask(
-        setHours(task.start, timeslot.hour),
-        setHours(task.end, timeslot.hour + task.duration),
-        task.description
+    if (timeslot && getHours(event.start) !== timeslot.hour) {
+      handleUpdateEvent(
+        setHours(event.start, timeslot.hour),
+        setHours(event.end, timeslot.hour + event.duration),
+        event.description
       );
     }
 
@@ -87,7 +87,7 @@ export default function TaskCard({
   };
 
   const handleDragEnd = () => {
-    positionTask();
+    positionEvent();
   };
 
   const handleResizeStart = (e: PointerEvent<HTMLButtonElement>) => {
@@ -119,18 +119,18 @@ export default function TaskCard({
       // arbitruary + 15 just makes resizing look more natural. The cursor gets ahead of the resize and padding by + 15 seems to hold the cursor closer to the handle (might be the handle's pixel size maybe?)
       height: e.clientY + 15 - top,
     }));
-    if (timeslot && getHours(task.end) !== timeslot.hour + 1) {
-      handleUpdateTask(
-        task.start,
-        setHours(task.end, timeslot.hour + 1),
-        task.description
+    if (timeslot && getHours(event.end) !== timeslot.hour + 1) {
+      handleUpdateEvent(
+        event.start,
+        setHours(event.end, timeslot.hour + 1),
+        event.description
       );
     }
   };
 
   const handleResizeEnd = (e: PointerEvent<HTMLButtonElement>) => {
     e.currentTarget.releasePointerCapture(e.pointerId);
-    positionTask();
+    positionEvent();
   };
 
   const handleDoubleClick = () => {
@@ -146,8 +146,8 @@ export default function TaskCard({
         height: `${state.height}px`,
         zIndex: `${state.isDragging || state.isResizing ? "999" : "0"}`,
         // top: `${top}rem`,
-        // height: `${calcHeight(task)}rem`,
-        // top: `${calcStart(task)}rem`,
+        // height: `${calcHeight(event)}rem`,
+        // top: `${calcStart(event)}rem`,
       }}
       onPointerDown={handleDragStart}
       onPointerMove={handleDrag}
@@ -163,10 +163,10 @@ export default function TaskCard({
           return true;
         };
       }}>
-      <h4>{task.description}</h4>
+      <h4>{event.description}</h4>
       <span>
-        {format(task.start, "h aa")} - {format(task.end, "h aa")} (Duration:{" "}
-        {getHours(task.end) - getHours(task.start)})
+        {format(event.start, "h aa")} - {format(event.end, "h aa")} (Duration:{" "}
+        {getHours(event.end) - getHours(event.start)})
         {state.isDouble && "Modal time!"}
       </span>
       <button

@@ -1,4 +1,4 @@
-export type Task = {
+export type Event = {
   start: Date;
   end: Date;
   duration: number;

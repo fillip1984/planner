@@ -9,8 +9,8 @@ import {
 } from "date-fns";
 import Head from "next/head";
 import { useEffect, useState } from "react";
-import TaskCard from "~/components/TaskCard";
-import { type Task, type Timeslot } from "~/types";
+import EventCard from "~/components/EventCard";
+import { type Event, type Timeslot } from "~/types";
 
 export default function Home() {
   const interval = { start: startOfDay(new Date()), end: endOfDay(new Date()) };
@@ -18,7 +18,7 @@ export default function Home() {
   const [timeslots, setTimeslots] = useState<Timeslot[]>([]);
 
   //differenceInHours(start, end) <-- generates duration
-  const [tasks, setTasks] = useState<Task[]>([
+  const [events, setEvents] = useState<Event[]>([
     {
       start: parse("2023-08-26 02:00", "yyyy-MM-dd HH:mm", new Date()),
       end: parse("2023-08-26 04:00", "yyyy-MM-dd HH:mm", new Date()),
@@ -74,17 +74,17 @@ export default function Home() {
     return [firstTimeslot, secondTimeslot];
   };
 
-  const handleUpdateTask = (start: Date, end: Date, taskId: string) => {
-    setTasks((prev) => {
-      return prev.map((prevTask) =>
-        prevTask.description === taskId
+  const handleUpdateEvent = (start: Date, end: Date, eventId: string) => {
+    setEvents((prev) => {
+      return prev.map((prevEvent) =>
+        prevEvent.description === eventId
           ? {
-              ...prevTask,
+              ...prevEvent,
               start,
               end,
               duration: differenceInHours(end, start),
             }
-          : prevTask
+          : prevEvent
       );
     });
   };
@@ -123,15 +123,15 @@ export default function Home() {
               </div>
             ))}
 
-            {/* Draw tasks */}
-            {tasks.map((task) => (
-              <TaskCard
-                key={task.description}
+            {/* Draw events */}
+            {events.map((event) => (
+              <EventCard
+                key={event.description}
                 timeslots={timeslots}
-                task={task}
+                event={event}
                 calculateHourBasedOnCoordinate={calculateHourBasedOnCoordinate}
                 calculatePosition={calculatePosition}
-                handleUpdateTask={handleUpdateTask}
+                handleUpdateEvent={handleUpdateEvent}
               />
             ))}
           </div>
