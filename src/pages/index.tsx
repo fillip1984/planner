@@ -1,15 +1,17 @@
 import {
+  areIntervalsOverlapping,
   differenceInHours,
   eachHourOfInterval,
   endOfDay,
   format,
   getHours,
+  intervalToDuration,
   parse,
   startOfDay,
 } from "date-fns";
 import Head from "next/head";
 import { useEffect, useState } from "react";
-import EventCard from "~/components/EventCard";
+import EventCard, { type widthPositionType } from "~/components/EventCard";
 import { type Event, type Timeslot } from "~/types";
 
 export default function Home() {
@@ -20,16 +22,32 @@ export default function Home() {
   //differenceInHours(start, end) <-- generates duration
   const [events, setEvents] = useState<Event[]>([
     {
+      id: "1",
       start: parse("2023-08-26 02:00", "yyyy-MM-dd HH:mm", new Date()),
-      end: parse("2023-08-26 04:00", "yyyy-MM-dd HH:mm", new Date()),
+      end: parse("2023-08-26 07:00", "yyyy-MM-dd HH:mm", new Date()),
       duration: 2,
-      description: "Sleeping",
+      description: "Second",
     },
     {
-      start: parse("2023-08-26 01:00", "yyyy-MM-dd HH:mm", new Date()),
-      end: parse("2023-08-26 02:00", "yyyy-MM-dd HH:mm", new Date()),
+      id: "2",
+      start: parse("2023-08-26 02:00", "yyyy-MM-dd HH:mm", new Date()),
+      end: parse("2023-08-26 06:00", "yyyy-MM-dd HH:mm", new Date()),
       duration: 2,
-      description: "Eating",
+      description: "Third",
+    },
+    {
+      id: "3",
+      start: parse("2023-08-26 02:00", "yyyy-MM-dd HH:mm", new Date()),
+      end: parse("2023-08-26 05:00", "yyyy-MM-dd HH:mm", new Date()),
+      duration: 2,
+      description: "Fourth",
+    },
+    {
+      id: "4",
+      start: parse("2023-08-26 02:00", "yyyy-MM-dd HH:mm", new Date()),
+      end: parse("2023-08-26 08:00", "yyyy-MM-dd HH:mm", new Date()),
+      duration: 2,
+      description: "First",
     },
   ]);
 
@@ -56,28 +74,120 @@ export default function Home() {
     setTimeslots(calculatedTimeslots);
   };
 
-  const calculateHourBasedOnCoordinate = (clientY: number) => {
+  const calculateHourBasedOnPosition = (clientY: number) => {
     const timeslot = timeslots?.find(
       (timeslot) => timeslot.top <= clientY && timeslot.bottom >= clientY
     );
 
-    return timeslot;
+    return timeslot?.hour;
   };
 
-  const calculatePosition = (start: Date, end: Date) => {
+  const calculatePositionBaseOnHour = (start: Date, end: Date) => {
     const firstTimeslot = timeslots.find(
       (timeslot) => timeslot.hour === getHours(start)
     );
     const secondTimeslot = timeslots.find(
       (timeslot) => timeslot.hour === getHours(end)
     );
-    return [firstTimeslot, secondTimeslot];
+
+    return { top: firstTimeslot?.top, bottom: secondTimeslot?.top };
+  };
+
+  const calculateWidthPosition = (event: Event): widthPositionType => {
+    //check how many collisions with all events it has
+    const eventAndInterval = {
+      event,
+      interval: { start: event.start, end: event.end },
+    };
+    const allEventIntervals = events.map((allEvent) => {
+      return {
+        event: allEvent,
+        interval: { start: allEvent.start, end: allEvent.end },
+      };
+    });
+
+    const collisions = allEventIntervals.filter((otherEventAndInterval) =>
+      areIntervalsOverlapping(
+        eventAndInterval.interval,
+        otherEventAndInterval.interval
+      )
+    );
+
+    //sort collisions by duration (the longer the higher the priority)
+    collisions.sort((eventAndInterval1, eventAndInterval2) => {
+      const dur1 = intervalToDuration(eventAndInterval1.interval);
+      const dur2 = intervalToDuration(eventAndInterval2.interval);
+      if (dur1.hours && dur2.hours) {
+        const hourDifference = dur2.hours - dur1.hours;
+        if (hourDifference !== 0) {
+          return hourDifference;
+        }
+        // order breaker is id sorted numberic or alpha
+        return eventAndInterval1.event.id.localeCompare(
+          eventAndInterval2.event.id
+        );
+      }
+      throw new Error("Unable to compare, not enough hours");
+    });
+
+    console.log("collisions", collisions);
+    // console.log("collisions", collisions, "event", event);
+
+    if (collisions.length === 1) {
+      return "full";
+    }
+
+    if (collisions.length === 2) {
+      return collisions.findIndex(
+        (i) => i.event.id === eventAndInterval.event.id
+      ) === 0
+        ? "firstOf2"
+        : "secondOf2";
+    }
+
+    if (collisions.length === 3) {
+      const index = collisions.findIndex(
+        (i) => i.event.id === eventAndInterval.event.id
+      );
+      if (index === 0) {
+        return "firstOf3";
+      }
+
+      if (index === 1) {
+        return "secondOf3";
+      }
+
+      return "thirdOf3";
+    }
+
+    if (collisions.length === 4) {
+      const index = collisions.findIndex(
+        (i) => i.event.id === eventAndInterval.event.id
+      );
+      if (index === 0) {
+        return "firstOf4";
+      }
+
+      if (index === 1) {
+        return "secondOf4";
+      }
+
+      if (index === 2) {
+        return "thirdOf4";
+      }
+
+      return "fourthOf4";
+    }
+
+    throw new Error(
+      "Unable to determine width position for event: " + event.id
+    );
   };
 
   const handleUpdateEvent = (start: Date, end: Date, eventId: string) => {
     setEvents((prev) => {
       return prev.map((prevEvent) =>
-        prevEvent.description === eventId
+        prevEvent.id === eventId
           ? {
               ...prevEvent,
               start,
@@ -126,12 +236,13 @@ export default function Home() {
             {/* Draw events */}
             {events.map((event) => (
               <EventCard
-                key={event.description}
+                key={event.id}
                 timeslots={timeslots}
                 event={event}
-                calculateHourBasedOnCoordinate={calculateHourBasedOnCoordinate}
-                calculatePosition={calculatePosition}
+                calculateHourBasedOnPosition={calculateHourBasedOnPosition}
+                calculatePositionBaseOnHour={calculatePositionBaseOnHour}
                 handleUpdateEvent={handleUpdateEvent}
+                calculateWidthPosition={calculateWidthPosition}
               />
             ))}
           </div>

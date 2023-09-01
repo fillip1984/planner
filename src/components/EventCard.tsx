@@ -3,20 +3,51 @@ import { useEffect, useState, type PointerEvent } from "react";
 import { BsArrowsExpand } from "react-icons/bs";
 import { type Event, type Timeslot } from "~/types";
 
+type EventCardState = {
+  isDragging: boolean;
+  originalY: number;
+  translateY: number;
+  lastTranslateY: number;
+
+  isResizing: boolean;
+  height: number;
+
+  widthPosition: widthPositionType;
+
+  isModalOpen: boolean;
+};
+
+export type widthPositionType =
+  | "firstOf2"
+  | "secondOf2"
+  | "firstOf3"
+  | "secondOf3"
+  | "thirdOf3"
+  | "firstOf4"
+  | "secondOf4"
+  | "thirdOf4"
+  | "fourthOf4"
+  | "full";
+
 export default function EventCard({
   timeslots,
   event,
-  calculateHourBasedOnCoordinate,
-  calculatePosition,
+  calculateHourBasedOnPosition,
+  calculatePositionBaseOnHour,
   handleUpdateEvent,
+  calculateWidthPosition,
 }: {
   timeslots: Timeslot[];
   event: Event;
-  calculateHourBasedOnCoordinate: (clientY: number) => Timeslot | undefined;
-  calculatePosition: (start: Date, end: Date) => (Timeslot | undefined)[];
+  calculateHourBasedOnPosition: (clientY: number) => number | undefined;
+  calculatePositionBaseOnHour: (
+    start: Date,
+    end: Date
+  ) => { top: number | undefined; bottom: number | undefined };
   handleUpdateEvent: (start: Date, end: Date, id: string) => void;
+  calculateWidthPosition: (event: Event) => widthPositionType;
 }) {
-  const [state, setState] = useState({
+  const [state, setState] = useState<EventCardState>({
     //drag props
     isDragging: false,
     originalY: 0,
@@ -27,7 +58,10 @@ export default function EventCard({
     isResizing: false,
     height: 0,
 
-    isDouble: false,
+    //both drag and resize
+    widthPosition: "full",
+
+    isModalOpen: false,
   });
 
   useEffect(() => {
@@ -35,19 +69,21 @@ export default function EventCard({
   }, [timeslots]);
 
   const positionEvent = () => {
-    const timeslots = calculatePosition(event.start, event.end);
-    if (timeslots?.[0] && timeslots[1]) {
-      const firstTimeslot = timeslots[0];
-      const secondTimeslot = timeslots[1];
+    const { top, bottom } = calculatePositionBaseOnHour(event.start, event.end);
+    const widthPosition = calculateWidthPosition(event);
+    console.log("event", event.id, "width", widthPosition);
+    if (top && bottom) {
       setState((prev) => ({
         ...prev,
         isDragging: false,
         isResizing: false,
         // give some margin is reason for +5
-        translateY: firstTimeslot.top + 5,
-        lastTranslateY: firstTimeslot.top,
+        translateY: top + 5,
+        lastTranslateY: top,
         // give some margin is reason for -10
-        height: secondTimeslot.top - firstTimeslot.top - 10,
+        height: bottom - top - 10,
+
+        widthPosition,
       }));
     }
   };
@@ -71,12 +107,12 @@ export default function EventCard({
 
     const newY = e.clientY - state.originalY + state.lastTranslateY;
 
-    const timeslot = calculateHourBasedOnCoordinate(newY);
-    if (timeslot && getHours(event.start) !== timeslot.hour) {
+    const hour = calculateHourBasedOnPosition(newY);
+    if (hour && getHours(event.start) !== hour) {
       handleUpdateEvent(
-        setHours(event.start, timeslot.hour),
-        setHours(event.end, timeslot.hour + event.duration),
-        event.description
+        setHours(event.start, hour),
+        setHours(event.end, hour + event.duration),
+        event.id
       );
     }
 
@@ -112,19 +148,15 @@ export default function EventCard({
     const top = e.currentTarget.parentElement?.getBoundingClientRect().top ?? 0;
     const bottom =
       e.currentTarget.parentElement?.getBoundingClientRect().bottom ?? 0;
-    const timeslot = calculateHourBasedOnCoordinate(bottom);
+    const hour = calculateHourBasedOnPosition(bottom);
 
     setState((prev) => ({
       ...prev,
       // arbitruary + 15 just makes resizing look more natural. The cursor gets ahead of the resize and padding by + 15 seems to hold the cursor closer to the handle (might be the handle's pixel size maybe?)
       height: e.clientY + 15 - top,
     }));
-    if (timeslot && getHours(event.end) !== timeslot.hour + 1) {
-      handleUpdateEvent(
-        event.start,
-        setHours(event.end, timeslot.hour + 1),
-        event.description
-      );
+    if (hour && getHours(event.end) !== hour + 1) {
+      handleUpdateEvent(event.start, setHours(event.end, hour + 1), event.id);
     }
   };
 
@@ -134,7 +166,32 @@ export default function EventCard({
   };
 
   const handleDoubleClick = () => {
-    setState((prev) => ({ ...prev, isDouble: !prev.isDouble }));
+    setState((prev) => ({ ...prev, isModalOpen: !prev.isModalOpen }));
+  };
+
+  const widthPositionStyle = (widthPosition: widthPositionType) => {
+    switch (widthPosition) {
+      case "firstOf2":
+        return "0% 50% 0% 0%";
+      case "secondOf2":
+        return "0% 0% 0% 50%";
+      case "firstOf3":
+        return "0% 66% 0% 0%";
+      case "secondOf3":
+        return "0% 34% 0% 34%";
+      case "thirdOf3":
+        return "0% 0% 0% 66%";
+      case "firstOf4":
+        return "0% 75% 0% 0%";
+      case "secondOf4":
+        return "0% 50% 0% 25%";
+      case "thirdOf4":
+        return "0% 25% 0% 50%";
+      case "fourthOf4":
+        return "0% 0% 0% 75%";
+      default:
+        return "0% 0% 0% 0%";
+    }
   };
 
   return (
@@ -145,6 +202,7 @@ export default function EventCard({
         cursor: `${state.isDragging ? "grabbing" : "grab"}`,
         height: `${state.height}px`,
         zIndex: `${state.isDragging || state.isResizing ? "999" : "0"}`,
+        inset: `${widthPositionStyle(state.widthPosition)}`,
         // top: `${top}rem`,
         // height: `${calcHeight(event)}rem`,
         // top: `${calcStart(event)}rem`,
@@ -167,7 +225,7 @@ export default function EventCard({
       <span>
         {format(event.start, "h aa")} - {format(event.end, "h aa")} (Duration:{" "}
         {getHours(event.end) - getHours(event.start)})
-        {state.isDouble && "Modal time!"}
+        {state.isModalOpen && "Modal time!"}
       </span>
       <button
         type="button"
