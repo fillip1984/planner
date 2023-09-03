@@ -9,7 +9,7 @@ import {
   startOfDay,
 } from "date-fns";
 import Head from "next/head";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import EventCard, { type widthPositionType } from "~/components/EventCard";
 import { type Event, type Timeslot } from "~/types";
 
@@ -17,6 +17,18 @@ export default function Home() {
   const interval = { start: startOfDay(new Date()), end: endOfDay(new Date()) };
   const hours = eachHourOfInterval(interval);
   const [timeslots, setTimeslots] = useState<Timeslot[]>([]);
+
+  // when calculating hour or top/bottom of timeslots you have to take into account the top position
+  // of the agenda. This is because drag and resize send Y coordinate of cursor on the screen which
+  // then has to be offset by the agenda's top position to be accurate
+  const agendaRef = useRef<HTMLDivElement | null>(null);
+  const [agendaTopOffset, setAgendaTopOffset] = useState(0);
+  useEffect(() => {
+    if (agendaRef) {
+      const agendaTop = agendaRef.current?.getBoundingClientRect().top ?? 0;
+      setAgendaTopOffset(agendaTop);
+    }
+  }, [agendaRef]);
 
   const [events, setEvents] = useState<Event[]>([
     {
@@ -69,8 +81,10 @@ export default function Home() {
   };
 
   const calculateHourBasedOnPosition = (clientY: number) => {
+    const clientYOffset = clientY - agendaTopOffset;
     const timeslot = timeslots?.find(
-      (timeslot) => timeslot.top <= clientY && timeslot.bottom >= clientY
+      (timeslot) =>
+        timeslot.top <= clientYOffset && timeslot.bottom >= clientYOffset
     );
 
     return timeslot?.hour;
@@ -84,7 +98,15 @@ export default function Home() {
       (timeslot) => timeslot.hour === getHours(end)
     );
 
-    return { top: firstTimeslot?.top, bottom: secondTimeslot?.top };
+    // timeslots not found, default to the top of the agenda
+    if (!firstTimeslot || !secondTimeslot) {
+      return { top: agendaTopOffset, bottom: agendaTopOffset };
+    }
+
+    return {
+      top: firstTimeslot.top - agendaTopOffset,
+      bottom: secondTimeslot.top - agendaTopOffset,
+    };
   };
 
   const calculateWidthPosition = (event: Event): widthPositionType => {
@@ -199,7 +221,8 @@ export default function Home() {
       <main className="flex min-h-screen flex-col bg-black text-white">
         {/* <h2>Planner</h2> */}
 
-        <div className="flex">
+        <div ref={agendaRef} className="flex">
+          {/* Draw agenda slot headers (shows the time for each slow, displayed on the left or head of slot) */}
           <div className="flex flex-col">
             {hours.map((hour) => (
               <div
@@ -217,9 +240,7 @@ export default function Home() {
           <div className="relative flex flex-1 flex-col bg-white/10">
             {hours.map((hour) => (
               <div key={hour.toISOString()} className="flex">
-                <div className="flex h-20 flex-1 items-center justify-center border border-dashed p-2 text-white/20">
-                  Available ({format(hour, "h aa")})
-                </div>
+                <div className="flex h-20 flex-1 items-center justify-center border border-dashed p-2 text-white/20"></div>
               </div>
             ))}
 

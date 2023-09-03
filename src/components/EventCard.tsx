@@ -3,6 +3,9 @@ import { useEffect, useState, type PointerEvent } from "react";
 import { BsArrowsExpand } from "react-icons/bs";
 import { type Event, type Timeslot } from "~/types";
 
+// adds some padding to show that event card falls within timeslot
+const CARD_Y_PADDING = 3;
+
 type EventCardState = {
   isDragging: boolean;
   originalY: number;
@@ -71,15 +74,15 @@ export default function EventCard({
   const positionEvent = () => {
     const { top, bottom } = calculatePositionBaseOnHour(event.start, event.end);
     const widthPosition = calculateWidthPosition(event);
-    if (top && bottom) {
+    if (top !== undefined && bottom != undefined) {
       setState((prev) => ({
         ...prev,
         isDragging: false,
         isResizing: false,
-        translateY: top,
+        translateY: top + CARD_Y_PADDING,
         lastTranslateY: top,
 
-        height: bottom - top,
+        height: bottom - top - CARD_Y_PADDING * 2,
 
         widthPosition,
       }));
@@ -143,20 +146,17 @@ export default function EventCard({
       return;
     }
 
-    // you have to find out how far off the top of the visible screen the item is to resize it
-    //properly. The clientY gives coordinates to where the cursor is on the visible screen so you
-    // have to remove that to accurately resize the element. Otherwise when you start resizing the
-    // element will jump the number of pixels that exist between the top of the element to the top
-    // of the screen
-    const top = e.currentTarget.parentElement?.getBoundingClientRect().top ?? 0;
     const bottom =
       e.currentTarget.parentElement?.getBoundingClientRect().bottom ?? 0;
     const hour = calculateHourBasedOnPosition(bottom);
 
     setState((prev) => ({
       ...prev,
-      // arbitruary + 15 just makes resizing look more natural. The cursor gets ahead of the resize and padding by + 15 seems to hold the cursor closer to the handle (might be the handle's pixel size maybe?)
-      height: e.clientY + 15 - top,
+      // arbitruary + 15 just makes resizing look more natural.
+      // The cursor gets ahead of the resize and padding by + 15
+      // seems to hold the cursor closer to the handle
+      // (might be the handle's pixel size maybe?)
+      height: e.clientY + 15,
     }));
     if (hour && getHours(event.end) !== hour + 1) {
       handleUpdateEvent(event.start, setHours(event.end, hour + 1), event.id);
@@ -210,13 +210,11 @@ export default function EventCard({
         height: `${state.height}px`,
         zIndex: `${state.isDragging || state.isResizing ? "999" : "0"}`,
         inset: `${widthPositionStyle(state.widthPosition)}`,
-        // top: `${top}rem`,
-        // height: `${calcHeight(event)}rem`,
-        // top: `${calcStart(event)}rem`,
       }}
       onPointerDown={handleDragStart}
       onPointerMove={handleDrag}
       onPointerUp={handleDragEnd}
+      onPointerCancel={handleDragEnd}
       // reason for onMouseOver and onMouseOut: https://stackoverflow.com/questions/47295211/safari-wrong-cursor-when-dragging
       onMouseOver={() => {
         document.onselectstart = () => {
@@ -243,7 +241,7 @@ export default function EventCard({
         onPointerDown={handleResizeStart}
         onPointerMove={handleResize}
         onPointerUp={handleResizeEnd}
-        // onPointerCancel={handleResizeEnd}
+        onPointerCancel={handleResizeEnd}
         // reason for onMouseOver and onMouseOut: https://stackoverflow.com/questions/47295211/safari-wrong-cursor-when-dragging
         onMouseOver={() => {
           document.onselectstart = () => {
