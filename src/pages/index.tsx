@@ -10,7 +10,7 @@ import {
 } from "date-fns";
 import Head from "next/head";
 import { useEffect, useRef, useState } from "react";
-import EventCard, { type widthPositionType } from "~/components/EventCard";
+import EventCard from "~/components/EventCard";
 import { type Event, type Timeslot } from "~/types";
 
 export default function Home() {
@@ -33,7 +33,7 @@ export default function Home() {
   const [events, setEvents] = useState<Event[]>([
     {
       id: "1",
-      start: parse("2023-08-26 02:00", "yyyy-MM-dd HH:mm", new Date()),
+      start: parse("2023-08-26 01:00", "yyyy-MM-dd HH:mm", new Date()),
       end: parse("2023-08-26 04:00", "yyyy-MM-dd HH:mm", new Date()),
       description: "Second",
     },
@@ -109,7 +109,7 @@ export default function Home() {
     };
   };
 
-  const calculateWidthPosition = (event: Event): widthPositionType => {
+  const calculateWidthPosition = (event: Event) => {
     //check how many collisions with all events it has
     const eventAndInterval = {
       event,
@@ -146,55 +146,15 @@ export default function Home() {
       throw new Error("Unable to compare, not enough hours");
     });
 
-    if (collisions.length === 1) {
-      return "full";
-    }
-
-    if (collisions.length === 2) {
-      return collisions.findIndex(
-        (i) => i.event.id === eventAndInterval.event.id
-      ) === 0
-        ? "firstOf2"
-        : "secondOf2";
-    }
-
-    if (collisions.length === 3) {
-      const index = collisions.findIndex(
-        (i) => i.event.id === eventAndInterval.event.id
-      );
-      if (index === 0) {
-        return "firstOf3";
-      }
-
-      if (index === 1) {
-        return "secondOf3";
-      }
-
-      return "thirdOf3";
-    }
-
-    if (collisions.length === 4) {
-      const index = collisions.findIndex(
-        (i) => i.event.id === eventAndInterval.event.id
-      );
-      if (index === 0) {
-        return "firstOf4";
-      }
-
-      if (index === 1) {
-        return "secondOf4";
-      }
-
-      if (index === 2) {
-        return "thirdOf4";
-      }
-
-      return "fourthOf4";
-    }
-
-    throw new Error(
-      "Unable to determine width position for event: " + event.id
+    const width = 100 / collisions.length;
+    const position = collisions.findIndex(
+      (i) => i.event.id === eventAndInterval.event.id
     );
+    // console.log({ position, width, id: event.id });
+    return {
+      width: 100 / collisions.length,
+      widthPosition: (position * 100) / collisions.length,
+    };
   };
 
   const handleUpdateEvent = (start: Date, end: Date, eventId: string) => {

@@ -5,6 +5,7 @@ import { type Event, type Timeslot } from "~/types";
 
 // adds some padding to show that event card falls within timeslot
 const CARD_Y_PADDING = 3;
+const CARD_X_PADDING = 0.5;
 
 type EventCardState = {
   isDragging: boolean;
@@ -15,22 +16,11 @@ type EventCardState = {
   isResizing: boolean;
   height: number;
 
-  widthPosition: widthPositionType;
+  width: number;
+  widthPosition: number;
 
   isModalOpen: boolean;
 };
-
-export type widthPositionType =
-  | "firstOf2"
-  | "secondOf2"
-  | "firstOf3"
-  | "secondOf3"
-  | "thirdOf3"
-  | "firstOf4"
-  | "secondOf4"
-  | "thirdOf4"
-  | "fourthOf4"
-  | "full";
 
 export default function EventCard({
   timeslots,
@@ -48,7 +38,10 @@ export default function EventCard({
     end: Date
   ) => { top: number | undefined; bottom: number | undefined };
   handleUpdateEvent: (start: Date, end: Date, id: string) => void;
-  calculateWidthPosition: (event: Event) => widthPositionType;
+  calculateWidthPosition: (event: Event) => {
+    width: number;
+    widthPosition: number;
+  };
 }) {
   const [state, setState] = useState<EventCardState>({
     //drag props
@@ -62,7 +55,8 @@ export default function EventCard({
     height: 0,
 
     //both drag and resize
-    widthPosition: "full",
+    width: 100,
+    widthPosition: 0,
 
     isModalOpen: false,
   });
@@ -78,7 +72,7 @@ export default function EventCard({
         event.start,
         event.end
       );
-      const widthPosition = calculateWidthPosition(event);
+      const { width, widthPosition } = calculateWidthPosition(event);
       if (top !== undefined && bottom != undefined) {
         setState((prev) => ({
           ...prev,
@@ -89,6 +83,7 @@ export default function EventCard({
 
           height: bottom - top - CARD_Y_PADDING * 2,
 
+          width,
           widthPosition,
         }));
       }
@@ -198,40 +193,16 @@ export default function EventCard({
     setState((prev) => ({ ...prev, isModalOpen: !prev.isModalOpen }));
   };
 
-  const widthPositionStyle = () => {
-    switch (state.widthPosition) {
-      case "firstOf2":
-        return "0% 50% 0% 0%";
-      case "secondOf2":
-        return "0% 0% 0% 50%";
-      case "firstOf3":
-        return "0% 66% 0% 0%";
-      case "secondOf3":
-        return "0% 34% 0% 34%";
-      case "thirdOf3":
-        return "0% 0% 0% 66%";
-      case "firstOf4":
-        return "0% 75% 0% 0%";
-      case "secondOf4":
-        return "0% 50% 0% 25%";
-      case "thirdOf4":
-        return "0% 25% 0% 50%";
-      case "fourthOf4":
-        return "0% 0% 0% 75%";
-      default:
-        return "0% 0% 0% 0%";
-    }
-  };
-
   return (
     <div
-      className="absolute left-0 right-0 min-h-[60px] touch-none select-none rounded-md border border-l-4 border-white bg-black p-2"
+      className="absolute min-h-[60px] touch-none select-none rounded-md border border-l-4 border-white bg-black p-2"
       style={{
         transform: `translateY(${state.translateY}px)`,
         cursor: `${state.isDragging ? "grabbing" : "grab"}`,
         height: `${state.height}px`,
         zIndex: `${state.isDragging || state.isResizing ? "999" : "0"}`,
-        inset: `${widthPositionStyle()}`,
+        width: `${state.width - CARD_X_PADDING}%`,
+        left: `${state.widthPosition + CARD_X_PADDING}%`,
       }}
       onPointerDown={handleDragStart}
       onPointerMove={handleDrag}
