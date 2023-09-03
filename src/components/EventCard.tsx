@@ -73,7 +73,7 @@ export default function EventCard({
 
   const positionEvent = () => {
     if (timeslots) {
-      console.info({ event: "Positioning event", id: event.id });
+      // console.info({ event: "Positioning event", id: event.id });
       const { top, bottom } = calculatePositionBaseOnHour(
         event.start,
         event.end
@@ -100,7 +100,7 @@ export default function EventCard({
       handleDoubleClick();
       return;
     }
-    console.info({ event: "Drag start", id: event.id });
+    // console.info({ event: "Drag start", id: event.id });
     setState((prev) => ({
       ...prev,
       isDragging: true,
@@ -112,7 +112,7 @@ export default function EventCard({
     if (!state.isDragging) {
       return;
     }
-    console.debug({ event: "Draging", id: event.id });
+    // console.debug({ event: "Dragging", id: event.id });
 
     const newY = e.clientY - state.originalY + state.lastTranslateY;
 
@@ -136,7 +136,7 @@ export default function EventCard({
     if (!state.isDragging) {
       return;
     }
-    console.info({ event: "Drag end", id: event.id });
+    // console.info({ event: "Drag end", id: event.id });
     setState((prev) => ({
       ...prev,
       isDragging: false,
@@ -145,7 +145,7 @@ export default function EventCard({
   };
 
   const handleResizeStart = (e: PointerEvent<HTMLButtonElement>) => {
-    console.info({ event: "Resize start", id: event.id });
+    // console.info({ event: "Resize start", id: event.id });
     e.stopPropagation();
     e.currentTarget.setPointerCapture(e.pointerId);
     setState((prev) => ({
@@ -158,7 +158,7 @@ export default function EventCard({
     if (!state.isResizing) {
       return;
     }
-    console.debug({ event: "Resizing", id: event.id });
+    // console.debug({ event: "Resizing", id: event.id });
 
     // this code, along with the style={{heigh:...}}, is what causes the card to resize
     // To properly calculate height of the element, and thus resize it, you have to know how far
@@ -184,7 +184,7 @@ export default function EventCard({
   };
 
   const handleResizeEnd = (e: PointerEvent<HTMLButtonElement>) => {
-    console.info({ event: "Resize end", id: event.id });
+    // console.info({ event: "Resize end", id: event.id });
     e.currentTarget.releasePointerCapture(e.pointerId);
     setState((prev) => ({
       ...prev,
@@ -194,12 +194,11 @@ export default function EventCard({
   };
 
   const handleDoubleClick = () => {
-    console.info({ event: "Double click", id: event.id });
+    // console.info({ event: "Double click", id: event.id });
     setState((prev) => ({ ...prev, isModalOpen: !prev.isModalOpen }));
   };
 
   const widthPositionStyle = () => {
-    console.debug({ event: "Width position style", id: event.id });
     switch (state.widthPosition) {
       case "firstOf2":
         return "0% 50% 0% 0%";
