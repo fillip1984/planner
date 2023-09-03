@@ -73,7 +73,7 @@ export default function EventCard({
 
   const positionEvent = () => {
     if (timeslots) {
-      console.log({ event: "Positioning event", id: event.id });
+      console.info({ event: "Positioning event", id: event.id });
       const { top, bottom } = calculatePositionBaseOnHour(
         event.start,
         event.end
@@ -100,7 +100,7 @@ export default function EventCard({
       handleDoubleClick();
       return;
     }
-    console.log({ event: "Drag start", id: event.id });
+    console.info({ event: "Drag start", id: event.id });
     setState((prev) => ({
       ...prev,
       isDragging: true,
@@ -112,7 +112,7 @@ export default function EventCard({
     if (!state.isDragging) {
       return;
     }
-    console.log({ event: "Draging", id: event.id });
+    console.debug({ event: "Draging", id: event.id });
 
     const newY = e.clientY - state.originalY + state.lastTranslateY;
 
@@ -133,7 +133,10 @@ export default function EventCard({
   };
 
   const handleDragEnd = () => {
-    console.log({ event: "Drag end", id: event.id });
+    if (!state.isDragging) {
+      return;
+    }
+    console.info({ event: "Drag end", id: event.id });
     setState((prev) => ({
       ...prev,
       isDragging: false,
@@ -142,7 +145,7 @@ export default function EventCard({
   };
 
   const handleResizeStart = (e: PointerEvent<HTMLButtonElement>) => {
-    console.log({ event: "Resize start", id: event.id });
+    console.info({ event: "Resize start", id: event.id });
     e.stopPropagation();
     e.currentTarget.setPointerCapture(e.pointerId);
     setState((prev) => ({
@@ -155,27 +158,33 @@ export default function EventCard({
     if (!state.isResizing) {
       return;
     }
-    console.log({ event: "Resizing", id: event.id });
+    console.debug({ event: "Resizing", id: event.id });
 
+    // this code, along with the style={{heigh:...}}, is what causes the card to resize
+    // To properly calculate height of the element, and thus resize it, you have to know how far
+    // from the top of the visible screen this element is. That's because e.clientY is the
+    // absolute position of the cursor on the screen
+    const top = e.currentTarget.parentElement?.getBoundingClientRect().top ?? 0;
+    setState((prev) => ({
+      ...prev,
+      //   // arbitruary + 15 just makes resizing look more natural.
+      //   // The cursor gets ahead of the resize and padding by + 15
+      //   // seems to hold the cursor closer to the handle
+      //   // (might be the handle's pixel size maybe?)
+      height: e.clientY - top + 15,
+    }));
+
+    // this code maintains the event.endDate
     const bottom =
       e.currentTarget.parentElement?.getBoundingClientRect().bottom ?? 0;
     const hour = calculateHourBasedOnPosition(bottom);
-
-    setState((prev) => ({
-      ...prev,
-      // arbitruary + 15 just makes resizing look more natural.
-      // The cursor gets ahead of the resize and padding by + 15
-      // seems to hold the cursor closer to the handle
-      // (might be the handle's pixel size maybe?)
-      height: e.clientY + 15,
-    }));
-    if (hour && getHours(event.end) !== hour + 1) {
+    if (hour !== undefined && getHours(event.end) !== hour + 1) {
       handleUpdateEvent(event.start, setHours(event.end, hour + 1), event.id);
     }
   };
 
   const handleResizeEnd = (e: PointerEvent<HTMLButtonElement>) => {
-    console.log({ event: "Resize end", id: event.id });
+    console.info({ event: "Resize end", id: event.id });
     e.currentTarget.releasePointerCapture(e.pointerId);
     setState((prev) => ({
       ...prev,
@@ -185,12 +194,12 @@ export default function EventCard({
   };
 
   const handleDoubleClick = () => {
-    console.log({ event: "Double click", id: event.id });
+    console.info({ event: "Double click", id: event.id });
     setState((prev) => ({ ...prev, isModalOpen: !prev.isModalOpen }));
   };
 
   const widthPositionStyle = () => {
-    console.log({ event: "Width position style", id: event.id });
+    console.debug({ event: "Width position style", id: event.id });
     switch (state.widthPosition) {
       case "firstOf2":
         return "0% 50% 0% 0%";
@@ -217,7 +226,7 @@ export default function EventCard({
 
   return (
     <div
-      className="absolute left-2 right-2 min-h-[60px] touch-none select-none rounded-md border border-l-4 border-white bg-black p-2"
+      className="absolute left-0 right-0 min-h-[60px] touch-none select-none rounded-md border border-l-4 border-white bg-black p-2"
       style={{
         transform: `translateY(${state.translateY}px)`,
         cursor: `${state.isDragging ? "grabbing" : "grab"}`,
