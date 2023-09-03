@@ -1,10 +1,12 @@
 import {
-  areIntervalsOverlapping,
+  addSeconds,
   eachHourOfInterval,
   endOfDay,
   format,
   getHours,
   intervalToDuration,
+  isBefore,
+  isWithinInterval,
   setHours,
   startOfDay,
 } from "date-fns";
@@ -34,28 +36,34 @@ export default function Home() {
   const [events, setEvents] = useState<Event[]>([
     {
       id: "1",
-      start: setHours(new Date(), 1),
-      end: setHours(new Date(), 4),
-      description: "Second",
+      start: setHours(startOfDay(new Date()), 2),
+      end: setHours(startOfDay(new Date()), 8),
+      description: "First",
     },
     {
       id: "2",
-      start: setHours(new Date(), 2),
-      end: setHours(new Date(), 6),
-      description: "Third",
+      start: setHours(startOfDay(new Date()), 1),
+      end: setHours(startOfDay(new Date()), 4),
+      description: "Second",
     },
     {
       id: "3",
-      start: setHours(new Date(), 2),
-      end: setHours(new Date(), 5),
-      description: "Fourth",
+      start: setHours(startOfDay(new Date()), 2),
+      end: setHours(startOfDay(new Date()), 6),
+      description: "Third",
     },
-    {
-      id: "4",
-      start: setHours(new Date(), 2),
-      end: setHours(new Date(), 8),
-      description: "First",
-    },
+    // {
+    //   id: "4",
+    //   start: setHours(startOfDay(new Date()), 2),
+    //   end: setHours(startOfDay(new Date()), 5),
+    //   description: "Fourth",
+    // },
+    // {
+    //   id: "5",
+    //   start: setHours(startOfDay(new Date()), 9),
+    //   end: setHours(startOfDay(new Date()), 10),
+    //   description: "Fifth",
+    // },
   ]);
 
   useEffect(() => {
@@ -110,55 +118,98 @@ export default function Home() {
     };
   };
 
-  const calculateWidthPosition = (event: Event) => {
-    //check how many collisions with all events it has
-    const eventAndInterval = {
-      event,
-      interval: { start: event.start, end: event.end },
-    };
+  const calculateWidthPosition = (anEvent: Event) => {
+    // build intervals for all events, go to hh:59:59 so that isWithinInterval includes hh:00:00
+    // but not hh:59:59
     const allEventIntervals = events.map((allEvent) => {
       return {
         event: allEvent,
-        interval: { start: allEvent.start, end: allEvent.end },
+        interval: { start: allEvent.start, end: addSeconds(allEvent.end, -1) },
       };
     });
-
-    const collisions = allEventIntervals.filter((otherEventAndInterval) =>
-      areIntervalsOverlapping(
-        eventAndInterval.interval,
-        otherEventAndInterval.interval
-      )
-    );
-
-    //sort collisions by duration (the longer the higher the priority)
-    collisions.sort((eventAndInterval1, eventAndInterval2) => {
-      const dur1 = intervalToDuration(eventAndInterval1.interval);
-      const dur2 = intervalToDuration(eventAndInterval2.interval);
-      if (dur1.hours && dur2.hours) {
-        const hourDifference = dur2.hours - dur1.hours;
-        if (hourDifference !== 0) {
-          return hourDifference;
-        }
-        // order breaker is id sorted numberic or alpha
-        return eventAndInterval1.event.id.localeCompare(
-          eventAndInterval2.event.id
-        );
-      }
-      throw new Error("Unable to compare, not enough hours");
+    const timeslotWithEventCounts = timeslots.map((timeslot) => {
+      return {
+        timeslot,
+        events: allEventIntervals
+          .filter((eventAndInterval) =>
+            isWithinInterval(
+              setHours(startOfDay(new Date()), timeslot.hour),
+              eventAndInterval.interval
+            )
+          )
+          .sort((eventAndInterval1, eventAndInterval2) => {
+            let dur1 =
+              getHours(eventAndInterval1.interval.end) -
+              getHours(eventAndInterval1.interval.start);
+            let dur2 =
+              getHours(eventAndInterval2.interval.end) -
+              getHours(eventAndInterval2.interval.start);
+            if (dur1 === 0) {
+              dur1 = 1;
+            }
+            if (dur2 === 0) {
+              dur2 = 1;
+            }
+            if (dur1 && dur2) {
+              const diff = dur2 - dur1;
+              console.log({ diff, dur1, dur2 });
+              if (diff !== 0) {
+                return diff;
+              }
+              // tiebreaker is id sorted numberic or alpha
+              console.log(
+                "using tiebreaker",
+                eventAndInterval1.event.description,
+                eventAndInterval2.event.description
+              );
+              return eventAndInterval1.event.id.localeCompare(
+                eventAndInterval2.event.id
+              );
+            }
+            throw new Error("Unable to compare intervals");
+          }),
+      };
     });
+    console.log({ timeslotWithEventCounts });
+    // setTimeslots(
+    //   timeslotWithEventCounts.map((ts) => {
+    //     return { ...ts.timeslot, eventCount: ts.events.length };
+    //   })
+    // );
+    // setEvents((prev) => {
+    //   return prev.map((prevEvent) =>
+    //     prevEvent.id === eventId
+    //       ? {
+    //           ...prevEvent,
+    //           start,
+    //           end,
+    //         }
+    //       : prevEvent
+    //   );
+    // });
 
-    const width = roundToNearestHundreth(100 / collisions.length);
-    const position = collisions.findIndex(
-      (i) => i.event.id === eventAndInterval.event.id
+    const timeslotsInvolved = timeslotWithEventCounts.filter(
+      (timeslotWithEventCount) =>
+        timeslotWithEventCount.events.findIndex(
+          (e) => e.event.id === anEvent.id
+        ) !== -1
     );
+    console.log({ timeslotsInvolved });
+
+    const maxCollisions = timeslotsInvolved
+      .map((t) => t.events.length)
+      .reduce((prev, current) => (prev > current ? prev : current), 0);
+    const width = roundToNearestHundreth(100 / maxCollisions);
+
+    const position =
+      timeslotsInvolved
+        .find((t) => t.events.length === maxCollisions)
+        ?.events.findIndex((e) => e.event.id === anEvent.id) ?? 0;
     const widthPosition = roundToNearestHundreth(
-      (position * 100) / collisions.length
+      (position * 100) / maxCollisions
     );
-    // console.log({ position, width, id: event.id });
-    return {
-      width,
-      widthPosition,
-    };
+    console.log({ widthPosition, position });
+    return { width, widthPosition };
   };
 
   const handleUpdateEvent = (start: Date, end: Date, eventId: string) => {
