@@ -12,6 +12,7 @@ import Head from "next/head";
 import { useEffect, useRef, useState } from "react";
 import EventCard from "~/components/EventCard";
 import { type Event, type Timeslot } from "~/types";
+import { roundToNearestHundreth } from "~/utils/numberUtils";
 
 export default function Home() {
   const interval = { start: startOfDay(new Date()), end: endOfDay(new Date()) };
@@ -146,14 +147,17 @@ export default function Home() {
       throw new Error("Unable to compare, not enough hours");
     });
 
-    const width = 100 / collisions.length;
+    const width = roundToNearestHundreth(100 / collisions.length);
     const position = collisions.findIndex(
       (i) => i.event.id === eventAndInterval.event.id
     );
-    // console.log({ position, width, id: event.id });
+    const widthPosition = roundToNearestHundreth(
+      (position * 100) / collisions.length
+    );
+    console.log({ position, width, id: event.id });
     return {
-      width: 100 / collisions.length,
-      widthPosition: (position * 100) / collisions.length,
+      width,
+      widthPosition,
     };
   };
 
