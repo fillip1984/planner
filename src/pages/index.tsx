@@ -229,7 +229,7 @@ export default function Home() {
                 key={hour.toISOString()}
                 data-timeslot={format(hour, "H")}
                 className="flex">
-                <div className="flex h-20 w-16 items-center justify-center border border-dashed p-2">
+                <div className="flex h-20 w-16 items-center justify-center border border-dashed">
                   {format(hour, "h aa")}
                 </div>
               </div>
@@ -240,7 +240,7 @@ export default function Home() {
           <div className="relative flex flex-1 flex-col bg-white/10">
             {hours.map((hour) => (
               <div key={hour.toISOString()} className="flex">
-                <div className="flex h-20 flex-1 items-center justify-center border border-dashed p-2 text-white/20"></div>
+                <div className="flex h-20 flex-1 items-center justify-center border border-dashed text-white/20"></div>
               </div>
             ))}
 
