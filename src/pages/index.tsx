@@ -5,7 +5,7 @@ import {
   format,
   getHours,
   intervalToDuration,
-  parse,
+  setHours,
   startOfDay,
 } from "date-fns";
 import Head from "next/head";
@@ -34,26 +34,26 @@ export default function Home() {
   const [events, setEvents] = useState<Event[]>([
     {
       id: "1",
-      start: parse("2023-08-26 01:00", "yyyy-MM-dd HH:mm", new Date()),
-      end: parse("2023-08-26 04:00", "yyyy-MM-dd HH:mm", new Date()),
+      start: setHours(new Date(), 1),
+      end: setHours(new Date(), 4),
       description: "Second",
     },
     {
       id: "2",
-      start: parse("2023-08-26 02:00", "yyyy-MM-dd HH:mm", new Date()),
-      end: parse("2023-08-26 06:00", "yyyy-MM-dd HH:mm", new Date()),
+      start: setHours(new Date(), 2),
+      end: setHours(new Date(), 6),
       description: "Third",
     },
     {
       id: "3",
-      start: parse("2023-08-26 02:00", "yyyy-MM-dd HH:mm", new Date()),
-      end: parse("2023-08-26 05:00", "yyyy-MM-dd HH:mm", new Date()),
+      start: setHours(new Date(), 2),
+      end: setHours(new Date(), 5),
       description: "Fourth",
     },
     {
       id: "4",
-      start: parse("2023-08-26 02:00", "yyyy-MM-dd HH:mm", new Date()),
-      end: parse("2023-08-26 08:00", "yyyy-MM-dd HH:mm", new Date()),
+      start: setHours(new Date(), 2),
+      end: setHours(new Date(), 8),
       description: "First",
     },
   ]);
@@ -154,7 +154,7 @@ export default function Home() {
     const widthPosition = roundToNearestHundreth(
       (position * 100) / collisions.length
     );
-    console.log({ position, width, id: event.id });
+    // console.log({ position, width, id: event.id });
     return {
       width,
       widthPosition,

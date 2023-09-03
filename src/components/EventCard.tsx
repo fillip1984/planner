@@ -63,6 +63,7 @@ export default function EventCard({
 
   useEffect(() => {
     positionEvent();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [timeslots]);
 
   const positionEvent = () => {
