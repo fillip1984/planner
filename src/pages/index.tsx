@@ -1,6 +1,5 @@
 import {
   areIntervalsOverlapping,
-  differenceInHours,
   eachHourOfInterval,
   endOfDay,
   format,
@@ -19,36 +18,31 @@ export default function Home() {
   const hours = eachHourOfInterval(interval);
   const [timeslots, setTimeslots] = useState<Timeslot[]>([]);
 
-  //differenceInHours(start, end) <-- generates duration
   const [events, setEvents] = useState<Event[]>([
     {
       id: "1",
       start: parse("2023-08-26 02:00", "yyyy-MM-dd HH:mm", new Date()),
       end: parse("2023-08-26 07:00", "yyyy-MM-dd HH:mm", new Date()),
-      duration: 2,
       description: "Second",
     },
-    {
-      id: "2",
-      start: parse("2023-08-26 02:00", "yyyy-MM-dd HH:mm", new Date()),
-      end: parse("2023-08-26 06:00", "yyyy-MM-dd HH:mm", new Date()),
-      duration: 2,
-      description: "Third",
-    },
-    {
-      id: "3",
-      start: parse("2023-08-26 02:00", "yyyy-MM-dd HH:mm", new Date()),
-      end: parse("2023-08-26 05:00", "yyyy-MM-dd HH:mm", new Date()),
-      duration: 2,
-      description: "Fourth",
-    },
-    {
-      id: "4",
-      start: parse("2023-08-26 02:00", "yyyy-MM-dd HH:mm", new Date()),
-      end: parse("2023-08-26 08:00", "yyyy-MM-dd HH:mm", new Date()),
-      duration: 2,
-      description: "First",
-    },
+    // {
+    //   id: "2",
+    //   start: parse("2023-08-26 02:00", "yyyy-MM-dd HH:mm", new Date()),
+    //   end: parse("2023-08-26 06:00", "yyyy-MM-dd HH:mm", new Date()),
+    //   description: "Third",
+    // },
+    // {
+    //   id: "3",
+    //   start: parse("2023-08-26 02:00", "yyyy-MM-dd HH:mm", new Date()),
+    //   end: parse("2023-08-26 05:00", "yyyy-MM-dd HH:mm", new Date()),
+    //   description: "Fourth",
+    // },
+    // {
+    //   id: "4",
+    //   start: parse("2023-08-26 02:00", "yyyy-MM-dd HH:mm", new Date()),
+    //   end: parse("2023-08-26 08:00", "yyyy-MM-dd HH:mm", new Date()),
+    //   description: "First",
+    // },
   ]);
 
   useEffect(() => {
@@ -130,9 +124,6 @@ export default function Home() {
       throw new Error("Unable to compare, not enough hours");
     });
 
-    console.log("collisions", collisions);
-    // console.log("collisions", collisions, "event", event);
-
     if (collisions.length === 1) {
       return "full";
     }
@@ -192,7 +183,6 @@ export default function Home() {
               ...prevEvent,
               start,
               end,
-              duration: differenceInHours(end, start),
             }
           : prevEvent
       );

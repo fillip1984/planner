@@ -71,17 +71,15 @@ export default function EventCard({
   const positionEvent = () => {
     const { top, bottom } = calculatePositionBaseOnHour(event.start, event.end);
     const widthPosition = calculateWidthPosition(event);
-    console.log("event", event.id, "width", widthPosition);
     if (top && bottom) {
       setState((prev) => ({
         ...prev,
         isDragging: false,
         isResizing: false,
-        // give some margin is reason for +5
-        translateY: top + 5,
+        translateY: top,
         lastTranslateY: top,
-        // give some margin is reason for -10
-        height: bottom - top - 10,
+
+        height: bottom - top,
 
         widthPosition,
       }));
@@ -108,10 +106,11 @@ export default function EventCard({
     const newY = e.clientY - state.originalY + state.lastTranslateY;
 
     const hour = calculateHourBasedOnPosition(newY);
-    if (hour && getHours(event.start) !== hour) {
+    if (hour !== undefined && getHours(event.start) !== hour) {
+      const change = getHours(event.start) - hour;
       handleUpdateEvent(
         setHours(event.start, hour),
-        setHours(event.end, hour + event.duration),
+        setHours(event.end, getHours(event.end) - change),
         event.id
       );
     }
@@ -123,6 +122,10 @@ export default function EventCard({
   };
 
   const handleDragEnd = () => {
+    setState((prev) => ({
+      ...prev,
+      isDragging: false,
+    }));
     positionEvent();
   };
 
@@ -162,6 +165,10 @@ export default function EventCard({
 
   const handleResizeEnd = (e: PointerEvent<HTMLButtonElement>) => {
     e.currentTarget.releasePointerCapture(e.pointerId);
+    setState((prev) => ({
+      ...prev,
+      isResizing: false,
+    }));
     positionEvent();
   };
 
