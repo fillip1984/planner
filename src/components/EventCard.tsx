@@ -72,20 +72,26 @@ export default function EventCard({
   }, [timeslots]);
 
   const positionEvent = () => {
-    const { top, bottom } = calculatePositionBaseOnHour(event.start, event.end);
-    const widthPosition = calculateWidthPosition(event);
-    if (top !== undefined && bottom != undefined) {
-      setState((prev) => ({
-        ...prev,
-        isDragging: false,
-        isResizing: false,
-        translateY: top + CARD_Y_PADDING,
-        lastTranslateY: top,
+    if (timeslots) {
+      console.log({ event: "Positioning event", id: event.id });
+      const { top, bottom } = calculatePositionBaseOnHour(
+        event.start,
+        event.end
+      );
+      const widthPosition = calculateWidthPosition(event);
+      if (top !== undefined && bottom != undefined) {
+        setState((prev) => ({
+          ...prev,
+          isDragging: false,
+          isResizing: false,
+          translateY: top + CARD_Y_PADDING,
+          lastTranslateY: top,
 
-        height: bottom - top - CARD_Y_PADDING * 2,
+          height: bottom - top - CARD_Y_PADDING * 2,
 
-        widthPosition,
-      }));
+          widthPosition,
+        }));
+      }
     }
   };
 
@@ -94,6 +100,7 @@ export default function EventCard({
       handleDoubleClick();
       return;
     }
+    console.log({ event: "Drag start", id: event.id });
     setState((prev) => ({
       ...prev,
       isDragging: true,
@@ -105,6 +112,7 @@ export default function EventCard({
     if (!state.isDragging) {
       return;
     }
+    console.log({ event: "Draging", id: event.id });
 
     const newY = e.clientY - state.originalY + state.lastTranslateY;
 
@@ -125,6 +133,7 @@ export default function EventCard({
   };
 
   const handleDragEnd = () => {
+    console.log({ event: "Drag end", id: event.id });
     setState((prev) => ({
       ...prev,
       isDragging: false,
@@ -133,6 +142,7 @@ export default function EventCard({
   };
 
   const handleResizeStart = (e: PointerEvent<HTMLButtonElement>) => {
+    console.log({ event: "Resize start", id: event.id });
     e.stopPropagation();
     e.currentTarget.setPointerCapture(e.pointerId);
     setState((prev) => ({
@@ -145,6 +155,7 @@ export default function EventCard({
     if (!state.isResizing) {
       return;
     }
+    console.log({ event: "Resizing", id: event.id });
 
     const bottom =
       e.currentTarget.parentElement?.getBoundingClientRect().bottom ?? 0;
@@ -164,6 +175,7 @@ export default function EventCard({
   };
 
   const handleResizeEnd = (e: PointerEvent<HTMLButtonElement>) => {
+    console.log({ event: "Resize end", id: event.id });
     e.currentTarget.releasePointerCapture(e.pointerId);
     setState((prev) => ({
       ...prev,
@@ -173,11 +185,13 @@ export default function EventCard({
   };
 
   const handleDoubleClick = () => {
+    console.log({ event: "Double click", id: event.id });
     setState((prev) => ({ ...prev, isModalOpen: !prev.isModalOpen }));
   };
 
-  const widthPositionStyle = (widthPosition: widthPositionType) => {
-    switch (widthPosition) {
+  const widthPositionStyle = () => {
+    console.log({ event: "Width position style", id: event.id });
+    switch (state.widthPosition) {
       case "firstOf2":
         return "0% 50% 0% 0%";
       case "secondOf2":
@@ -209,12 +223,12 @@ export default function EventCard({
         cursor: `${state.isDragging ? "grabbing" : "grab"}`,
         height: `${state.height}px`,
         zIndex: `${state.isDragging || state.isResizing ? "999" : "0"}`,
-        inset: `${widthPositionStyle(state.widthPosition)}`,
+        inset: `${widthPositionStyle()}`,
       }}
       onPointerDown={handleDragStart}
       onPointerMove={handleDrag}
       onPointerUp={handleDragEnd}
-      onPointerCancel={handleDragEnd}
+      // onPointerCancel={handleDragEnd}
       // reason for onMouseOver and onMouseOut: https://stackoverflow.com/questions/47295211/safari-wrong-cursor-when-dragging
       onMouseOver={() => {
         document.onselectstart = () => {
@@ -241,7 +255,7 @@ export default function EventCard({
         onPointerDown={handleResizeStart}
         onPointerMove={handleResize}
         onPointerUp={handleResizeEnd}
-        onPointerCancel={handleResizeEnd}
+        // onPointerCancel={handleResizeEnd}
         // reason for onMouseOver and onMouseOut: https://stackoverflow.com/questions/47295211/safari-wrong-cursor-when-dragging
         onMouseOver={() => {
           document.onselectstart = () => {

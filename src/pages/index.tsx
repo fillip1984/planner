@@ -34,7 +34,7 @@ export default function Home() {
     {
       id: "1",
       start: parse("2023-08-26 02:00", "yyyy-MM-dd HH:mm", new Date()),
-      end: parse("2023-08-26 07:00", "yyyy-MM-dd HH:mm", new Date()),
+      end: parse("2023-08-26 04:00", "yyyy-MM-dd HH:mm", new Date()),
       description: "Second",
     },
     // {
