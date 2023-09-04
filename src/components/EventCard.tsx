@@ -191,8 +191,8 @@ export default function EventCard({
         cursor: `${state.isDragging ? "grabbing" : "grab"}`,
         height: `${state.height}px`,
         zIndex: `${state.isDragging || state.isResizing ? "999" : "0"}`,
-        left: `${event.startX}%`,
-        right: `${event.endX}%`,
+        left: `${event.left}%`,
+        right: `${event.right}%`,
       }}
       onPointerDown={handleDragStart}
       onPointerMove={handleDrag}

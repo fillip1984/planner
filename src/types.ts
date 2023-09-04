@@ -6,8 +6,8 @@ export type Event = {
 };
 
 export type AgendaPosition = {
-  startX: number;
-  endX: number;
+  left: number; // 0 = left most, 100 = right most
+  right: number; // 100 = left most, 0 right most
 };
 
 export type AgendaEvent = Event & AgendaPosition;

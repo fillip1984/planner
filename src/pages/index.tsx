@@ -38,40 +38,40 @@ export default function Home() {
       start: setHours(startOfDay(new Date()), 2),
       end: setHours(startOfDay(new Date()), 8),
       description: "First",
-      startX: 0,
-      endX: 0,
+      left: 0,
+      right: 0,
     },
     {
       id: "2",
       start: setHours(startOfDay(new Date()), 1),
       end: setHours(startOfDay(new Date()), 4),
       description: "Second",
-      startX: 0,
-      endX: 0,
+      left: 0,
+      right: 0,
     },
     {
       id: "3",
       start: setHours(startOfDay(new Date()), 2),
       end: setHours(startOfDay(new Date()), 6),
       description: "Third",
-      startX: 0,
-      endX: 0,
+      left: 0,
+      right: 0,
     },
     {
       id: "4",
       start: setHours(startOfDay(new Date()), 6),
       end: setHours(startOfDay(new Date()), 9),
       description: "Fourth",
-      startX: 0,
-      endX: 0,
+      left: 0,
+      right: 0,
     },
     {
       id: "5",
       start: setHours(startOfDay(new Date()), 9),
       end: setHours(startOfDay(new Date()), 10),
       description: "Fifth",
-      startX: 0,
-      endX: 0,
+      left: 0,
+      right: 0,
     },
   ]);
 
@@ -186,10 +186,15 @@ export default function Home() {
     // console.dir({ eventsSortedByConflictCount });
 
     // lay events out going from longest duration to shortest duration
-    // if conflicts, startX is currentX (last item's endX), endX is 100/conflict count
-    // if no conflicts, startX and endX are 0
-    let currentX = 0;
-    const updates = eventsSortedByDuration.map((e) => {
+    // if no conflicts, left and right are 0
+    // if conflicts, left is currentLeft (last item's left), right is 100/conflict count
+    // unless, currentLeft is > 100, then we have to look at conflicts and reclaim space... still figuring this out
+    let left = 0;
+    let right = 0;
+    let width = 0;
+    let newline = false;
+    const updates: { event: AgendaEvent; left: number; right: number }[] = [];
+    eventsSortedByDuration.forEach((e) => {
       const conflictCount = eventsSortedByConflictCount.find(
         (event) => event.event.id === e.event.id
       )?.maxConflictCount;
@@ -199,40 +204,84 @@ export default function Home() {
       }
 
       let update;
-      let endX = 0;
-      let width = 0;
+
       if (conflictCount === 0) {
+        left = 0;
+        right = 0;
         width = 0;
-        endX = 0;
         update = {
           event: e.event,
-          startX: 0,
-          endX,
+          left,
+          right,
         };
+        //reset newline since we reset to left = 0
+        newline = false;
+      } else if (newline) {
+        // look for conflicts to figure out where they were laid out
+        const conflictingEvents = timeslotWithEvents
+          .filter((timelineslot) =>
+            timelineslot.eventsInTimeslot.find(
+              (tse) => tse.event.id === e.event.id
+            )
+          )
+          .map((timelineslot) =>
+            timelineslot.eventsInTimeslot.filter(
+              (tse) => tse.event.id !== e.event.id
+            )
+          )
+          .flat()
+          .map((tse) => tse.event)
+          .reduce(
+            (u, i) => (u.includes(i) ? u : [...u, i]),
+            [] as AgendaEvent[]
+          );
+        console.dir({ conflictingEvents });
+
+        // summing to left variable but we are effectively getting the width of all previous conflicts
+        conflictingEvents.forEach((ce) => {
+          const updatedConflict = updates.find((u) => u.event.id === ce.id);
+          left += 100 - (updatedConflict?.right ?? 0);
+        });
+        console.log({ left });
+
+        update = { event: e.event, left, right: 0 };
+        //reseting newline?
       } else {
         // will always be true here
         width = roundToNearestHundreth(100 / (conflictCount + 1));
-        endX = roundToNearestHundreth(100 - currentX - width);
+        right = roundToNearestHundreth(100 - left - width);
+
+        // prevent out of bounds
+        if (right < 0) {
+          right = 0;
+          newline = true;
+        }
         update = {
           event: e.event,
-          startX: currentX,
-          endX,
+          left,
+          right,
         };
       }
-      currentX += width;
+      left += width;
+
+      //prevent out of bounds, start new line
+      if (left >= 100) {
+        left = 0;
+        newline = true;
+      }
       console.dir({ id: e.event.id, update });
-      return update;
+      updates.push(update);
     });
 
     // find elements with the least conflict count
     setEvents((prev) => {
       return prev.map((prevEvent) => ({
         ...prevEvent,
-        startX:
-          updates.find((update) => update.event.id === prevEvent.id)?.startX ??
+        left:
+          updates.find((update) => update.event.id === prevEvent.id)?.left ?? 0,
+        right:
+          updates.find((update) => update.event.id === prevEvent.id)?.right ??
           0,
-        endX:
-          updates.find((update) => update.event.id === prevEvent.id)?.endX ?? 0,
       }));
     });
   };
