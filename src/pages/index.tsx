@@ -4,8 +4,6 @@ import {
   endOfDay,
   format,
   getHours,
-  intervalToDuration,
-  isBefore,
   isWithinInterval,
   setHours,
   startOfDay,
@@ -52,18 +50,18 @@ export default function Home() {
       end: setHours(startOfDay(new Date()), 6),
       description: "Third",
     },
-    // {
-    //   id: "4",
-    //   start: setHours(startOfDay(new Date()), 2),
-    //   end: setHours(startOfDay(new Date()), 5),
-    //   description: "Fourth",
-    // },
-    // {
-    //   id: "5",
-    //   start: setHours(startOfDay(new Date()), 9),
-    //   end: setHours(startOfDay(new Date()), 10),
-    //   description: "Fifth",
-    // },
+    {
+      id: "4",
+      start: setHours(startOfDay(new Date()), 6),
+      end: setHours(startOfDay(new Date()), 9),
+      description: "Fourth",
+    },
+    {
+      id: "5",
+      start: setHours(startOfDay(new Date()), 9),
+      end: setHours(startOfDay(new Date()), 10),
+      description: "Fifth",
+    },
   ]);
 
   useEffect(() => {
@@ -152,7 +150,6 @@ export default function Home() {
             }
             if (dur1 && dur2) {
               const diff = dur2 - dur1;
-              console.log({ diff, dur1, dur2 });
               if (diff !== 0) {
                 return diff;
               }
@@ -170,23 +167,6 @@ export default function Home() {
           }),
       };
     });
-    console.log({ timeslotWithEventCounts });
-    // setTimeslots(
-    //   timeslotWithEventCounts.map((ts) => {
-    //     return { ...ts.timeslot, eventCount: ts.events.length };
-    //   })
-    // );
-    // setEvents((prev) => {
-    //   return prev.map((prevEvent) =>
-    //     prevEvent.id === eventId
-    //       ? {
-    //           ...prevEvent,
-    //           start,
-    //           end,
-    //         }
-    //       : prevEvent
-    //   );
-    // });
 
     const timeslotsInvolved = timeslotWithEventCounts.filter(
       (timeslotWithEventCount) =>
@@ -194,7 +174,6 @@ export default function Home() {
           (e) => e.event.id === anEvent.id
         ) !== -1
     );
-    console.log({ timeslotsInvolved });
 
     const maxCollisions = timeslotsInvolved
       .map((t) => t.events.length)
@@ -208,7 +187,6 @@ export default function Home() {
     const widthPosition = roundToNearestHundreth(
       (position * 100) / maxCollisions
     );
-    console.log({ widthPosition, position });
     return { width, widthPosition };
   };
 
