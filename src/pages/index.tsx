@@ -52,7 +52,7 @@ export default function Home() {
     {
       id: "3",
       start: setHours(startOfDay(new Date()), 2),
-      end: setHours(startOfDay(new Date()), 6),
+      end: setHours(startOfDay(new Date()), 5),
       description: "Third",
       left: 0,
       right: 0,
@@ -215,19 +215,36 @@ export default function Home() {
             (u, i) => (u.includes(i) ? u : [...u, i]),
             [] as AgendaEvent[]
           );
-        // console.dir({ conflictingEvents });
+        console.dir({ conflictingEvents });
 
-        // summing width of all previous conflicts to come up with new left starting position
-        let totalWidth = 0;
+        // // summing width of all previous conflicts to come up with new left starting position
+        // let totalWidth = 0;
+        // conflictingEvents.forEach((ce) => {
+        //   const fce = updates.find((u) => u.event.id === ce.id);
+        //   if (!fce) {
+        //     throw new Error("Unable to find conflicting event's dimensions");
+        //   }
+        //   totalWidth += roundToNearestHundreth(100 - fce.right - fce.left);
+        // });
+
+        // left = totalWidth;
+
+        // find right most element and flip measurement to create starting left position
+        let shortestRight = 999;
         conflictingEvents.forEach((ce) => {
-          const fce = updates.find((u) => u.event.id === ce.id);
-          if (!fce) {
-            throw new Error("Unable to find conflicting event's dimensions");
+          const updatedEvent = updates.find((u) => (u.event.id = ce.id));
+          if (!updatedEvent) {
+            throw new Error(
+              "Unable to determine starting point for new line. Missing conflicting event in updates array"
+            );
           }
-          totalWidth += roundToNearestHundreth(100 - fce.right - fce.left);
+          shortestRight =
+            shortestRight < updatedEvent.right
+              ? shortestRight
+              : updatedEvent.right;
         });
-
-        left = totalWidth;
+        console.log({ shortestRight });
+        left = 100 - shortestRight;
         // since some of the conflicts were already taken into account, we need to remove them later on when performing math on conflict counts
         conflictReducer = conflictingEvents.length;
         newline = false;
