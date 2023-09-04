@@ -185,7 +185,7 @@ export default function EventCard({
 
   return (
     <div
-      className="absolute min-h-[60px] touch-none select-none rounded-md border border-l-4 border-white bg-black p-2"
+      className="absolute min-h-[60px] touch-none select-none overflow-hidden rounded-md border border-l-4 border-white bg-black p-2"
       style={{
         transform: `translateY(${state.translateY}px)`,
         cursor: `${state.isDragging ? "grabbing" : "grab"}`,
@@ -210,9 +210,9 @@ export default function EventCard({
         };
       }}>
       <h4>{event.description}</h4>
-      <span>
-        {format(event.start, "h aa")} - {format(event.end, "h aa")} (Duration:{" "}
-        {getHours(event.end) - getHours(event.start)})
+      <span className="text-xs">
+        {format(event.start, "h aa")} - {format(event.end, "h aa")} (
+        {getHours(event.end) - getHours(event.start)} hrs)
         {state.isModalOpen && "Modal time!"}
       </span>
       <button

@@ -1,11 +1,10 @@
 import {
   addSeconds,
+  differenceInMinutes,
   eachHourOfInterval,
   endOfDay,
   format,
   getHours,
-  getMinutes,
-  intervalToDuration,
   isWithinInterval,
   setHours,
   startOfDay,
@@ -14,7 +13,6 @@ import Head from "next/head";
 import { useEffect, useRef, useState } from "react";
 import EventCard from "~/components/EventCard";
 import { type AgendaEvent, type Timeslot } from "~/types";
-import { convertIntervalToMinutes } from "~/utils/dateUtils";
 import { roundToNearestHundreth } from "~/utils/numberUtils";
 
 export default function Home() {
@@ -134,111 +132,99 @@ export default function Home() {
   };
 
   const calculateWidthPosition = () => {
-    // figure out duration for events, sort list longest to shortest
+    console.log("width positioning run starting");
+    // sort events by duration, longest to shortest, using id as tiebreaker
     const eventsSortedByDuration = events
       .map((event) => ({
         event,
-        // build intervals for all events, go to hh:59:59 so that isWithinInterval includes hh:00:00
-        // but not hh:59:59
+        durationInMinutes: differenceInMinutes(event.end, event.start),
         interval: { start: event.start, end: addSeconds(event.end, -1) },
-        duration: convertIntervalToMinutes({
-          start: event.start,
-          end: event.end,
-        }),
       }))
-      .sort((dur1, dur2) => {
-        const diff = dur2.duration - dur1.duration;
+      .sort((e1, e2) => {
+        const diff = e2.durationInMinutes - e1.durationInMinutes;
         if (diff !== 0) {
           return diff;
         }
-        return dur2.event.id.localeCompare(dur1.event.id);
+        return e1.event.id.localeCompare(e2.event.id);
       });
     // console.dir({ eventsSortedByDuration });
 
-    //build out timeslots
-    const timeslotsWithEvents = timeslots.map((timeslot) => ({
-      timeslot,
-      events: eventsSortedByDuration.filter((e) =>
-        isWithinInterval(timeslot.date, e.interval)
-      ),
-    }));
-    // console.dir({ timeslotsWithEvents });
+    // sort events by number of conflicts, most to least, using id as tiebreaker
+    const timeslotWithEvents = timeslots
+      .map((timeslot) => {
+        const eventsInTimeslot = eventsSortedByDuration.filter((e) =>
+          isWithinInterval(timeslot.date, e.interval)
+        );
 
-    // figure out event conflict count
-    const conflictCounts = eventsSortedByDuration.map((esbd) => {
-      const tsis = timeslotsWithEvents.filter((ts) =>
-        ts.events.find((e) => e.event.id === esbd.event.id)
-      );
-      const m = tsis
-        .map((t) => t.events.length - 1)
-        .reduce((prev, current) => (prev > current ? prev : current), 0);
-      return { event: esbd, conflictCount: m };
-    });
-    // console.dir({ conflictCounts });
+        return {
+          timeslot,
+          eventsInTimeslot,
+        };
+      })
+      .filter((timeslot) => timeslot.eventsInTimeslot.length > 0);
+    // console.dir({ timeslotWithEvents });
 
-    // figure out duration for events, sort list longest to shortest
-    // const eventsWithDurationInMinutes = events
-    //   .map((event) => {
-    //     const interval = { start: event.start, end: event.end };
-    //     const duration = intervalToDuration(interval);
-    //     const durationInMinutes =
-    //       (duration.minutes ?? 0) + (duration.hours ?? 0 * 60);
-    //     // console.log(duration, durationInMinutes);
-    //     return {
-    //       event,
-    //       durationInMinutes,
-    //     };
-    //   })
-    //   .sort((dur1, dur2) => {
-    //     const diff = dur2.durationInMinutes - dur1.durationInMinutes;
-    //     if (diff !== 0) {
-    //       return diff;
-    //     }
-    //     return dur2.event.id.localeCompare(dur1.event.id);
-    //   });
-    // console.dir({ eventsWithDurationInMinutes });
+    const eventsSortedByConflictCount = events
+      .map((event) => {
+        const timeslots = timeslotWithEvents.filter((timeslot) =>
+          timeslot.eventsInTimeslot.find((e) => e.event.id === event.id)
+        );
+        const maxConflictCount = timeslots
+          .map((timeslot) => timeslot.eventsInTimeslot.length)
+          .reduce((prev, current) => (prev > current ? prev : current), 0);
 
-    // figure out event conflict
-    // const eventsWithConflictCount = eventsWithDurationInMinutes.map(
-    //   (eventWithDurationInMinutes) => {
-    //     const interval = {
-    //       start: eventWithDurationInMinutes.event.start,
-    //       end: eventWithDurationInMinutes.event.end,
-    //     };
-    //     const maxConflictCount = 0;
-    //     return { eventWithDurationInMinutes, maxConflictCount };
-    //   }
-    // );
-    // console.dir({ eventsWithConflictCount });
-
-    // going from longest event, figure out start and end x percentage
-    let startX = 0;
-    let endX = 0;
-    const updates = eventsSortedByDuration.map((e) => {
-      startX = endX;
-      const conflictCount = conflictCounts.find(
-        (cc) => cc.event.event.id === e.event.id
-      );
-      if (!conflictCount) {
-        throw new Error("Error");
-      }
-      const totalConflicts = conflictCount.conflictCount + 1;
-
-      endX = roundToNearestHundreth(100 - (startX + 100 / totalConflicts));
-      console.log({
-        id: e.event.description,
-        conflictCount: totalConflicts,
-        startX,
-        endX,
+        //subtract 1 to remove counting self
+        return { event, maxConflictCount: maxConflictCount - 1 };
+      })
+      .sort((e1, e2) => {
+        const diff = e2.maxConflictCount - e1.maxConflictCount;
+        if (diff !== 0) {
+          return diff;
+        }
+        return e1.event.id.localeCompare(e2.event.id);
       });
-      return {
-        event: e.event,
-        startX,
-        endX,
-      };
+    // console.dir({ eventsSortedByConflictCount });
+
+    // lay events out going from longest duration to shortest duration
+    // if conflicts, startX is currentX (last item's endX), endX is 100/conflict count
+    // if no conflicts, startX and endX are 0
+    let currentX = 0;
+    const updates = eventsSortedByDuration.map((e) => {
+      const conflictCount = eventsSortedByConflictCount.find(
+        (event) => event.event.id === e.event.id
+      )?.maxConflictCount;
+
+      if (conflictCount === undefined) {
+        throw new Error("Unable to find event conflict count");
+      }
+
+      let update;
+      let endX = 0;
+      let width = 0;
+      if (conflictCount === 0) {
+        width = 0;
+        endX = 0;
+        update = {
+          event: e.event,
+          startX: 0,
+          endX,
+        };
+      } else {
+        // will always be true here
+        width = roundToNearestHundreth(100 / (conflictCount + 1));
+        endX = roundToNearestHundreth(100 - currentX - width);
+        update = {
+          event: e.event,
+          startX: currentX,
+          endX,
+        };
+      }
+      currentX += width;
+      console.dir({ id: e.event.id, update });
+      return update;
     });
 
-    //update events
+    // find elements with the least conflict count
     setEvents((prev) => {
       return prev.map((prevEvent) => ({
         ...prevEvent,
