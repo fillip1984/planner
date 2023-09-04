@@ -235,17 +235,23 @@ export default function Home() {
             (u, i) => (u.includes(i) ? u : [...u, i]),
             [] as AgendaEvent[]
           );
-        console.dir({ conflictingEvents });
+        // console.dir({ conflictingEvents });
 
         // summing to left variable but we are effectively getting the width of all previous conflicts
-        conflictingEvents.forEach((ce) => {
-          const updatedConflict = updates.find((u) => u.event.id === ce.id);
-          left += 100 - (updatedConflict?.right ?? 0);
-        });
-        console.log({ left });
 
-        update = { event: e.event, left, right: 0 };
+        let totalWidth = 0;
+        conflictingEvents.forEach((ce) => {
+          const fce = updates.find((u) => u.event.id === ce.id);
+          if (!fce) {
+            throw new Error("Unable to find conflicting event's dimensions");
+          }
+          totalWidth += roundToNearestHundreth(100 - fce.right - fce.left);
+        });
+
+        // TODO: guessing on right, need to send back to the follow else flow
+        update = { event: e.event, left: totalWidth, right: 0 };
         //reseting newline?
+        newline = false;
       } else {
         // will always be true here
         width = roundToNearestHundreth(100 / (conflictCount + 1));
