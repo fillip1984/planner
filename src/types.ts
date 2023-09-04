@@ -5,8 +5,16 @@ export type Event = {
   description: string;
 };
 
+export type AgendaPosition = {
+  startX: number;
+  endX: number;
+};
+
+export type AgendaEvent = Event & AgendaPosition;
+
 export type Timeslot = {
   hour: number; // 00 - 23
+  date: Date;
   top: number;
   bottom: number;
 };

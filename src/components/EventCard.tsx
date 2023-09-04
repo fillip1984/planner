@@ -1,7 +1,7 @@
 import { format, getHours, setHours } from "date-fns";
 import { useEffect, useState, type PointerEvent } from "react";
 import { BsArrowsExpand } from "react-icons/bs";
-import { type Event, type Timeslot } from "~/types";
+import { type AgendaEvent, type Timeslot } from "~/types";
 
 // adds some padding to show that event card falls within timeslot
 const CARD_Y_PADDING = 3;
@@ -16,9 +16,6 @@ type EventCardState = {
   isResizing: boolean;
   height: number;
 
-  width: number;
-  widthPosition: number;
-
   isModalOpen: boolean;
 };
 
@@ -31,17 +28,14 @@ export default function EventCard({
   calculateWidthPosition,
 }: {
   timeslots: Timeslot[];
-  event: Event;
+  event: AgendaEvent;
   calculateHourBasedOnPosition: (clientY: number) => number | undefined;
   calculatePositionBaseOnHour: (
     start: Date,
     end: Date
   ) => { top: number | undefined; bottom: number | undefined };
   handleUpdateEvent: (start: Date, end: Date, id: string) => void;
-  calculateWidthPosition: (event: Event) => {
-    width: number;
-    widthPosition: number;
-  };
+  calculateWidthPosition: () => void;
 }) {
   const [state, setState] = useState<EventCardState>({
     //drag props
@@ -55,8 +49,6 @@ export default function EventCard({
     height: 0,
 
     //both drag and resize
-    width: 100,
-    widthPosition: 0,
 
     isModalOpen: false,
   });
@@ -73,7 +65,7 @@ export default function EventCard({
         event.start,
         event.end
       );
-      const { width, widthPosition } = calculateWidthPosition(event);
+      calculateWidthPosition();
       if (top !== undefined && bottom != undefined) {
         setState((prev) => ({
           ...prev,
@@ -83,9 +75,6 @@ export default function EventCard({
           lastTranslateY: top,
 
           height: bottom - top - CARD_Y_PADDING * 2,
-
-          width,
-          widthPosition,
         }));
       }
     }
@@ -202,8 +191,8 @@ export default function EventCard({
         cursor: `${state.isDragging ? "grabbing" : "grab"}`,
         height: `${state.height}px`,
         zIndex: `${state.isDragging || state.isResizing ? "999" : "0"}`,
-        width: `${state.width - CARD_X_PADDING}%`,
-        left: `${state.widthPosition + CARD_X_PADDING}%`,
+        left: `${event.startX}%`,
+        right: `${event.endX}%`,
       }}
       onPointerDown={handleDragStart}
       onPointerMove={handleDrag}
