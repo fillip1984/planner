@@ -1,6 +1,6 @@
 # Planner
 
-Trying to build an agenda
+Trying to build an agenda...but giving up on this format. Laying out absolute items in a grid so that they don't overlay one another is harder than it looks when they are absolutely positioned. I'm going to try and do waht apple does on their calendar instead but leaving this code here if I ever want to revert back
 
 ## Ideas
 
