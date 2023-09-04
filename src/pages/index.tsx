@@ -193,30 +193,10 @@ export default function Home() {
     let right = 0;
     let width = 0;
     let newline = false;
+    let conflictReducer = 0;
     const updates: { event: AgendaEvent; left: number; right: number }[] = [];
     eventsSortedByDuration.forEach((e) => {
-      const conflictCount = eventsSortedByConflictCount.find(
-        (event) => event.event.id === e.event.id
-      )?.maxConflictCount;
-
-      if (conflictCount === undefined) {
-        throw new Error("Unable to find event conflict count");
-      }
-
-      let update;
-
-      if (conflictCount === 0) {
-        left = 0;
-        right = 0;
-        width = 0;
-        update = {
-          event: e.event,
-          left,
-          right,
-        };
-        //reset newline since we reset to left = 0
-        newline = false;
-      } else if (newline) {
+      if (newline) {
         // look for conflicts to figure out where they were laid out
         const conflictingEvents = timeslotWithEvents
           .filter((timelineslot) =>
@@ -237,8 +217,7 @@ export default function Home() {
           );
         // console.dir({ conflictingEvents });
 
-        // summing to left variable but we are effectively getting the width of all previous conflicts
-
+        // summing width of all previous conflicts to come up with new left starting position
         let totalWidth = 0;
         conflictingEvents.forEach((ce) => {
           const fce = updates.find((u) => u.event.id === ce.id);
@@ -248,13 +227,36 @@ export default function Home() {
           totalWidth += roundToNearestHundreth(100 - fce.right - fce.left);
         });
 
-        // TODO: guessing on right, need to send back to the follow else flow
-        update = { event: e.event, left: totalWidth, right: 0 };
-        //reseting newline?
+        left = totalWidth;
+        // since some of the conflicts were already taken into account, we need to remove them later on when performing math on conflict counts
+        conflictReducer = conflictingEvents.length;
         newline = false;
+      }
+
+      const conflictCount = eventsSortedByConflictCount.find(
+        (event) => event.event.id === e.event.id
+      )?.maxConflictCount;
+
+      if (conflictCount === undefined) {
+        throw new Error("Unable to find event conflict count");
+      }
+
+      let update;
+      if (conflictCount === 0) {
+        left = 0;
+        right = 0;
+        width = 0;
+        //reset newline since we reset to left = 0
+        newline = false;
+        update = {
+          event: e.event,
+          left,
+          right,
+        };
       } else {
-        // will always be true here
-        width = roundToNearestHundreth(100 / (conflictCount + 1));
+        width = roundToNearestHundreth(
+          100 / (conflictCount + 1 - conflictReducer)
+        );
         right = roundToNearestHundreth(100 - left - width);
 
         // prevent out of bounds
@@ -268,6 +270,7 @@ export default function Home() {
           right,
         };
       }
+
       left += width;
 
       //prevent out of bounds, start new line
